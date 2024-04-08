@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Anki Search",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/anki-search.py",
+            "args": [
+                "testd",
+                "test"
+            ], // Параметры передаются здесь
+            "console": "integratedTerminal"
+        }
+    ]
+}
