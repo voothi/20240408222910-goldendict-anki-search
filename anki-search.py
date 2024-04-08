@@ -5,12 +5,12 @@ def search_word_in_deck(deck_name, search_word):
     # Адрес сервера Anki Connect
     anki_connect_url = "http://localhost:8765"
     
-    # Формируем запрос для поиска слова в колоде
+    # Формируем запрос для поиска слова в колоде по полю "WordSource"
     payload = {
         "action": "findNotes",
         "version": 6,
         "params": {
-            "query": f"deck:'{deck_name}' {search_word}"
+            "query": f"deck:'{deck_name}' WordSource:'{search_word}'"
         }
     }
     
