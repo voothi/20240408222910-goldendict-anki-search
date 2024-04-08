@@ -3,7 +3,7 @@ import requests
 
 def search_word_in_deck(deck_name, search_word):
     # Адрес сервера Anki Connect
-    anki_connect_url = "http://127.0.0.1:8765"
+    anki_connect_url = "http://localhost:8765"
     
     # Формируем запрос для поиска слова в колоде по полю "WordSource"
     payload = {
@@ -22,24 +22,25 @@ def search_word_in_deck(deck_name, search_word):
         result = response.json()
         note_ids = result["result"]
         
-        # Теперь формируем запрос для получения содержимого поля "WordDestination" для каждой заметки
+        # Теперь формируем запрос для получения всех полей для каждой заметки
         payload = {
             "action": "notesInfo",
             "version": 6,
             "params": {
-                "notes": note_ids,
-                "fields": ["WordDestination"]
+                "notes": note_ids
             }
         }
         
-        # Отправляем запрос для получения содержимого поля "WordDestination"
+        # Отправляем запрос для получения всех полей для каждой заметки
         response = requests.post(anki_connect_url, json=payload)
         
         if response.status_code == 200:
             result = response.json()
-            return result["result"]
+            # Фильтруем только поле "WordDestination" для каждой заметки
+            word_destinations = [note["fields"]["WordDestination"]["value"] for note in result["result"]]
+            return word_destinations
         else:
-            print("Ошибка при получении содержимого поля WordDestination:", response.status_code)
+            print("Ошибка при получении всех полей заметок:", response.status_code)
             return None
     else:
         print("Ошибка при отправке запроса для поиска заметок:", response.status_code)
