@@ -62,13 +62,14 @@ if __name__ == "__main__":
     
     # Вывод результатов
     if result:
-        for note in result:
+        for i, note in enumerate(result):
             if note['WordSource']:
-                print(f"WordSource: {note['WordSource']}")
+                print(f"{note['WordSource']}")
             if note['SentenceSource']:
-                print(f"SentenceSource: {note['SentenceSource']}")
+                print(f"{note['SentenceSource']}")
             if note['WordDestination']:
-                print(f"WordDestination: {note['WordDestination']}")
-            print("\t")
+                print(f"{note['WordDestination']}")
+            if i != len(result) - 1:  # Проверяем, не является ли текущая запись последней
+                print("\t")
     else:
         print("Ничего не найдено.")
