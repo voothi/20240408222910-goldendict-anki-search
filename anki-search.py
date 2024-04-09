@@ -55,4 +55,4 @@ if __name__ == "__main__":
 
     # Выполнение поиска
     result = search_word_in_decks(args.search_word)
-    print("Результаты поиска:", result)
+    print(result)
