@@ -63,9 +63,12 @@ if __name__ == "__main__":
     # Вывод результатов
     if result:
         for note in result:
-            print(f"WordSource: {note['WordSource']}")
-            print(f"SentenceSource: {note['SentenceSource']}")
-            print(f"WordDestination: {note['WordDestination']}")
+            if note['WordSource']:
+                print(f"WordSource: {note['WordSource']}")
+            if note['SentenceSource']:
+                print(f"SentenceSource: {note['SentenceSource']}")
+            if note['WordDestination']:
+                print(f"WordDestination: {note['WordDestination']}")
             print("\t")
     else:
         print("Ничего не найдено.")
