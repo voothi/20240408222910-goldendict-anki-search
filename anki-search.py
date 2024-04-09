@@ -10,7 +10,7 @@ def search_word_in_decks(search_word):
         "action": "findNotes",
         "version": 6,
         "params": {
-            "query": f"WordSource:'{search_word}'"
+            "query": f"WordSource:{search_word}"
         }
     }
     
@@ -39,6 +39,7 @@ def search_word_in_decks(search_word):
             # Фильтруем только поле "WordDestination" для каждой заметки
             word_destinations = [note["fields"]["WordDestination"]["value"] for note in result["result"]]
             return word_destinations
+            # return result
         else:
             print("Ошибка при получении всех полей заметок:", response.status_code)
             return None
