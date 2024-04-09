@@ -1,6 +1,33 @@
 import argparse
 import requests
 
+def get_card_ids_for_notes(note_ids):
+    # Адрес сервера Anki Connect
+    anki_connect_url = "http://localhost:8765"
+    
+    # Формируем запрос для получения идентификаторов карт для заметок
+    payload = {
+        "action": "notesInfo",
+        "version": 6,
+        "params": {
+            "notes": note_ids
+        }
+    }
+    
+    # Отправляем запрос для получения информации о заметках
+    response = requests.post(anki_connect_url, json=payload)
+    
+    # Обрабатываем результат
+    if response.status_code == 200:
+        result = response.json()
+        card_ids = []
+        for note in result["result"]:
+            card_ids.extend(note["cards"])
+        return card_ids
+    else:
+        print("Ошибка при получении идентификаторов карт для заметок:", response.status_code)
+        return None
+
 def get_decks_for_notes(note_ids):
     # Адрес сервера Anki Connect
     anki_connect_url = "http://localhost:8765"
@@ -10,7 +37,7 @@ def get_decks_for_notes(note_ids):
         "action": "getDecks",
         "version": 6,
         "params": {
-            "cards": note_ids
+            "cards": get_card_ids_for_notes(note_ids)
         }
     }
     
@@ -77,6 +104,8 @@ def search_word_in_decks(search_word):
                     word_source = note["fields"].get("WordSource", {}).get("value", None)
                     word_destination = note["fields"].get("WordDestination", {}).get("value", None)
                     sentence_source = note["fields"].get("SentenceSource", {}).get("value", None)
+                    card_ids = note.get("cards", [])
+                    decks = get_decks_for_notes(card_ids)  # Получаем названия колод для найденных заметок
                     deck_name = get_deck_name(note["noteId"], decks)
                     note_data.append({"WordSource": word_source, "WordDestination": word_destination, "SentenceSource": sentence_source, "DeckName": deck_name})
                 return note_data
