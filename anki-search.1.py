@@ -36,10 +36,14 @@ def search_word_in_decks(search_word):
         
         if response.status_code == 200:
             result = response.json()
-            # Фильтруем только поле "WordDestination" для каждой заметки
-            word_destinations = [note["fields"]["WordDestination"]["value"] for note in result["result"]]
-            return word_destinations
-            # return result
+            # Собираем все нужные поля для каждой заметки
+            note_data = []
+            for note in result["result"]:
+                word_source = note["fields"].get("WordSource", {}).get("value", None)
+                word_destination = note["fields"].get("WordDestination", {}).get("value", None)
+                sentence_source = note["fields"].get("SentenceSource", {}).get("value", None)
+                note_data.append({"WordSource": word_source, "WordDestination": word_destination, "SentenceSource": sentence_source})
+            return note_data
         else:
             print("Ошибка при получении всех полей заметок:", response.status_code)
             return None
@@ -55,4 +59,13 @@ if __name__ == "__main__":
 
     # Выполнение поиска
     result = search_word_in_decks(args.search_word)
-    print("Результаты поиска:", result)
+    
+    # Вывод результатов
+    if result:
+        for note in result:
+            print(f"WordSource: {note['WordSource']}")
+            print(f"SentenceSource: {note['SentenceSource']}")
+            print(f"WordDestination: {note['WordDestination']}")
+            print()
+    else:
+        print("Ничего не найдено.")
