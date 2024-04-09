@@ -66,6 +66,6 @@ if __name__ == "__main__":
             print(f"WordSource: {note['WordSource']}")
             print(f"SentenceSource: {note['SentenceSource']}")
             print(f"WordDestination: {note['WordDestination']}")
-            print()
+            print("\t")
     else:
         print("Ничего не найдено.")
