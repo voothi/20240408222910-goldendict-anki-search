@@ -7,7 +7,16 @@
             "request": "launch",
             "program": "${workspaceFolder}/anki-search.py",
             "args": [
-                "testd",
+                "test"
+            ], // Параметры передаются здесь
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Debug Anki Search 1",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/anki-search.1.py",
+            "args": [
                 "test"
             ], // Параметры передаются здесь
             "console": "integratedTerminal"
