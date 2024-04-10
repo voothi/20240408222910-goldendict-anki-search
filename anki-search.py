@@ -10,7 +10,7 @@ def search_word_in_decks(search_word):
         "action": "findNotes",
         "version": 6,
         "params": {
-            "query": f"WordSource:{search_word}"
+            "query": f'"WordSource:{search_word}"'
         }
     }
     
@@ -63,8 +63,10 @@ if __name__ == "__main__":
     # Вывод результатов
     if result:
         for i, note in enumerate(result):
-            if note['WordSource'] or note['WordDestination']:
-                print(f"{note['WordSource']} – {note['WordDestination']}")
+            if note['WordSource']:
+                print(f"{note['WordSource']}", end='')
+                if note['WordDestination']:
+                    print(f" – {note['WordDestination']}")
             if note['SentenceSource']:
                 print(f"{note['SentenceSource']}")
             if i != len(result) - 1:  # Проверяем, не является ли текущая запись последней
