@@ -13,10 +13,10 @@ def search_word_in_decks(search_word):
             "query": f'"WordSource:{search_word}"'
         }
     }
-    
+    # test
     # Отправляем запрос для получения ID заметок
     response = requests.post(anki_connect_url, json=payload)
-    
+
     # Обрабатываем результат
     if response.status_code == 200:
         result = response.json()
