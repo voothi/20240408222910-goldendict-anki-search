@@ -20,6 +20,16 @@
                 "test"
             ], // Параметры передаются здесь
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Debug Anki Search 2",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/anki-search.2.py",
+            "args": [
+                "test"
+            ], // Параметры передаются здесь
+            "console": "integratedTerminal"
         }
     ]
 }
