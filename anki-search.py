@@ -23,7 +23,7 @@ def search_word_in_decks(search_word):
         card_ids = result["result"]
         
         if not card_ids:
-            print("Ничего не найдено.")
+            # print("Ничего не найдено.")
             return None
         
         # Теперь формируем запрос для получения всей информации для каждой карточки
