@@ -67,6 +67,7 @@ if __name__ == "__main__":
                 print(f"{note['WordSource']}", end='')
                 if note['WordDestination']:
                     print(f" – {note['WordDestination']}")
+                else: print("")
             if note['SentenceSource']:
                 print(f"{note['SentenceSource']}")
             if i != len(result) - 1:  # Проверяем, не является ли текущая запись последней
