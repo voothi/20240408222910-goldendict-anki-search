@@ -5,50 +5,55 @@ def search_word_in_decks(search_word):
     # Адрес сервера Anki Connect
     anki_connect_url = "http://localhost:8765"
     
-    # Формируем запрос для поиска слова в любой колоде по полю "WordSource"
+    # Формируем запрос для поиска ID карточек по полю "WordSource"
     payload = {
-        "action": "findNotes",
+        "action": "findCards",
         "version": 6,
         "params": {
             "query": f'"WordSource:{search_word}"'
         }
     }
     
-    # Отправляем запрос для получения ID заметок
+    # Отправляем запрос для получения ID карточек
     response = requests.post(anki_connect_url, json=payload)
 
     # Обрабатываем результат
     if response.status_code == 200:
         result = response.json()
-        note_ids = result["result"]
+        card_ids = result["result"]
         
-        # Теперь формируем запрос для получения всех полей для каждой заметки
+        if not card_ids:
+            print("Ничего не найдено.")
+            return None
+        
+        # Теперь формируем запрос для получения всей информации для каждой карточки
         payload = {
-            "action": "notesInfo",
+            "action": "cardsInfo",
             "version": 6,
             "params": {
-                "notes": note_ids
+                "cards": card_ids
             }
         }
         
-        # Отправляем запрос для получения всех полей для каждой заметки
+        # Отправляем запрос для получения информации о карточках
         response = requests.post(anki_connect_url, json=payload)
         
         if response.status_code == 200:
             result = response.json()
-            # Собираем все нужные поля для каждой заметки
-            note_data = []
-            for note in result["result"]:
-                word_source = note["fields"].get("WordSource", {}).get("value", None)
-                word_destination = note["fields"].get("WordDestination", {}).get("value", None)
-                sentence_source = note["fields"].get("SentenceSource", {}).get("value", None)
-                note_data.append({"WordSource": word_source, "WordDestination": word_destination, "SentenceSource": sentence_source})
-            return note_data
+            # Собираем все нужные поля для каждой карточки
+            card_data = []
+            for card in result["result"]:
+                fields = card["fields"]
+                word_source = fields.get("WordSource", {}).get("value", None)
+                word_destination = fields.get("WordDestination", {}).get("value", None)
+                sentence_source = fields.get("SentenceSource", {}).get("value", None)
+                card_data.append({"WordSource": word_source, "WordDestination": word_destination, "SentenceSource": sentence_source})
+            return card_data
         else:
-            print("Ошибка при получении всех полей заметок:", response.status_code)
+            print("Ошибка при получении информации о карточках:", response.status_code)
             return None
     else:
-        print("Ошибка при отправке запроса для поиска заметок:", response.status_code)
+        print("Ошибка при отправке запроса для поиска карточек:", response.status_code)
         return None
 
 if __name__ == "__main__":
@@ -62,13 +67,14 @@ if __name__ == "__main__":
     
     # Вывод результатов
     if result:
-        for i, note in enumerate(result):
-            if note['WordSource']:
-                print(f"{note['WordSource']}", end='')
-                if note['WordDestination']:
-                    print(f" – {note['WordDestination']}")
-            if note['SentenceSource']:
-                print(f"{note['SentenceSource']}")
+        for i, card in enumerate(result):
+            if card['WordSource']:
+                print(f"{card['WordSource']}", end='')
+                if card['WordDestination']:
+                    print(f" – {card['WordDestination']}")
+                else: print("")
+            if card['SentenceSource']:
+                print(f"{card['SentenceSource']}")
             if i != len(result) - 1:  # Проверяем, не является ли текущая запись последней
                 print("\t")
     else:
