@@ -23,7 +23,7 @@ def search_word_in_decks(search_word):
         card_ids = result["result"]
         
         if not card_ids:
-            print("Ничего не найдено.")
+            # print("Ничего не найдено.")
             return None
         
         # Теперь формируем запрос для получения всей информации для каждой карточки
@@ -47,11 +47,13 @@ def search_word_in_decks(search_word):
                 word_source = fields.get("WordSource", {}).get("value", None)
                 word_destination = fields.get("WordDestination", {}).get("value", None)
                 sentence_source = fields.get("SentenceSource", {}).get("value", None)
+                sentence_destination = fields.get("SentenceDestination", {}).get("value", None)
                 deck_name = card.get("deckName", None)  # Извлекаем имя колоды
                 card_data.append({
                     "WordSource": word_source,
                     "WordDestination": word_destination,
                     "SentenceSource": sentence_source,
+                    "SentenceDestination": sentence_destination,
                     "DeckName": deck_name  # Добавляем имя колоды
                 })
             return card_data
@@ -82,9 +84,11 @@ if __name__ == "__main__":
                     print("")
             if card['SentenceSource']:
                 print(f"{card['SentenceSource']}")
+            if card['SentenceDestination']:
+                print(f"{card['SentenceDestination']}")
             if card['DeckName']:
                 print(f"{card['DeckName']}")
             if i != len(result) - 1:  # Проверяем, не является ли текущая запись последней
                 print("\t")
     else:
-        print("Ничего не найдено.")
+        print("Nothing found.")
