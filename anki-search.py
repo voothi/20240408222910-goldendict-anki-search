@@ -48,13 +48,15 @@ def search_word_in_decks(search_word):
                 word_destination = fields.get("WordDestination", {}).get("value", None)
                 sentence_source = fields.get("SentenceSource", {}).get("value", None)
                 sentence_destination = fields.get("SentenceDestination", {}).get("value", None)
+                word_morphology = fields.get("WordSourceMorphologyAI", {}).get("value", None)  # Извлекаем морфологические данные
                 deck_name = card.get("deckName", None)  # Извлекаем имя колоды
                 card_data.append({
                     "WordSource": word_source,
                     "WordDestination": word_destination,
                     "SentenceSource": sentence_source,
                     "SentenceDestination": sentence_destination,
-                    "DeckName": deck_name  # Добавляем имя колоды
+                    "WordSourceMorphologyAI": word_morphology,  # Добавляем морфологические данные
+                    "DeckName": deck_name
                 })
             return card_data
         else:
@@ -86,6 +88,8 @@ if __name__ == "__main__":
                 print(f"{card['SentenceSource']}")
             if card['SentenceDestination']:
                 print(f"{card['SentenceDestination']}")
+            if card['WordSourceMorphologyAI']:
+                print(f"{card['WordSourceMorphologyAI']}")
             if card['DeckName']:
                 print(f"{card['DeckName']}")
             if i != len(result) - 1:  # Проверяем, не является ли текущая запись последней
