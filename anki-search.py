@@ -70,7 +70,7 @@ def _strip_html(text):
     """Функция для удаления простых HTML-тегов."""
     import re
     clean = re.compile('<.*?>')
-    return re.sub(clean, '', text)
+    return re.sub(clean, ' ', text)
 
 if __name__ == "__main__":
     # Парсинг аргументов командной строки
