@@ -44,18 +44,18 @@ def search_word_in_decks(search_word):
             card_data = []
             for card in result["result"]:
                 fields = card["fields"]
-                word_source = fields.get("WordSource", {}).get("value", None)
-                word_destination = fields.get("WordDestination", {}).get("value", None)
-                sentence_source = fields.get("SentenceSource", {}).get("value", None)
-                sentence_destination = fields.get("SentenceDestination", {}).get("value", None)
-                word_morphology = fields.get("WordSourceMorphologyAI", {}).get("value", None)  # Извлекаем морфологические данные
-                deck_name = card.get("deckName", None)  # Извлекаем имя колоды
+                word_source = _strip_html(fields.get("WordSource", {}).get("value", ""))
+                word_destination = _strip_html(fields.get("WordDestination", {}).get("value", ""))
+                sentence_source = _strip_html(fields.get("SentenceSource", {}).get("value", ""))
+                sentence_destination = _strip_html(fields.get("SentenceDestination", {}).get("value", ""))
+                word_morphology = _strip_html(fields.get("WordSourceMorphologyAI", {}).get("value", ""))
+                deck_name = card.get("deckName", None)
                 card_data.append({
                     "WordSource": word_source,
                     "WordDestination": word_destination,
                     "SentenceSource": sentence_source,
                     "SentenceDestination": sentence_destination,
-                    "WordSourceMorphologyAI": word_morphology,  # Добавляем морфологические данные
+                    "WordSourceMorphologyAI": word_morphology,
                     "DeckName": deck_name
                 })
             return card_data
@@ -65,6 +65,12 @@ def search_word_in_decks(search_word):
     else:
         print("Ошибка при отправке запроса для поиска карточек:", response.status_code)
         return None
+
+def _strip_html(text):
+    """Функция для удаления простых HTML-тегов."""
+    import re
+    clean = re.compile('<.*?>')
+    return re.sub(clean, '', text)
 
 if __name__ == "__main__":
     # Парсинг аргументов командной строки
