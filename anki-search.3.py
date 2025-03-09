@@ -1,33 +1,20 @@
 # anki-search.py
 import argparse
 import requests
-import re  # Moved import here since it's only used in _strip_html
 
-
-def search_word_in_decks(search_word, search_type):
-    """Searches for a word in all Anki decks.
-
-    Args:
-        search_word: The word to search for.
-        search_type:  The type of search to perform ("word" or "sentence").
-    """
+def search_word_in_decks(search_word):
+    """Searches for a word in all Anki decks."""
 
     # Anki Connect server address
     anki_connect_url = "http://localhost:8765"
 
-    # Build the query to find card IDs
-    if search_type == "word":
-        query = f'"WordSource:{search_word}"'
-    elif search_type == "sentence":
-        query = f'"SentenceSource:*{search_word}*"'
-    else:
-        raise ValueError("Invalid search_type. Must be 'word' or 'sentence'.")
-
+    # Build the query to find card IDs based on the "WordSource" field
     payload = {
         "action": "findCards",
         "version": 6,
         "params": {
-            "query": query
+            # "query": f'"WordSource:{search_word}"'  # Use double quotes to correctly handle the colon
+            "query": f'"SentenceSource:*{search_word}*"'  # Use double quotes to correctly handle the colon
         }
     }
 
@@ -81,23 +68,20 @@ def search_word_in_decks(search_word, search_type):
         print("Error sending search query:", response.status_code)
         return None
 
-
 def _strip_html(text):
     """Removes basic HTML tags from text."""
+    import re
     clean = re.compile('<.*?>')
     return re.sub(clean, ' ', text)
-
 
 if __name__ == "__main__":
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Search for a word in any Anki deck")
-    parser.add_argument("--query", required=True, help="Word to search for in any Anki deck (e.g., --query \"test\")")
-    parser.add_argument("--search_type", choices=['word', 'sentence'], default='word',
-                        help="Type of search: 'word' for WordSource, 'sentence' for SentenceSource (default: word)")
+    parser.add_argument("--query", required=True, help="Word to search for in any Anki deck (e.g., --query \"test\")")  # Changed to --query and made required
     args = parser.parse_args()
 
     # Perform the search
-    result = search_word_in_decks(args.query, args.search_type)
+    result = search_word_in_decks(args.query)
 
     # Output the results
     if result:
@@ -117,6 +101,6 @@ if __name__ == "__main__":
             if card['DeckName']:
                 print(f"{card['DeckName']}")
             if i != len(result) - 1:  # Check if it's not the last record
-                print("\t")  # Use tab as separator
+                print("\t") #Use tab as separator 
     else:
         print("Nothing found.")

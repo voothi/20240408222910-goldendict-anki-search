@@ -7,7 +7,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/anki-search.py",
             "args": [
-                "--query", "test"
+                "--query", "'SentenceSource:*heute wollen*'"
             ], // Параметры передаются здесь
             "console": "integratedTerminal"
         },
