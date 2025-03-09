@@ -17,9 +17,12 @@ def search_word_in_decks(search_word, search_type):
 
     # Build the query to find card IDs
     if search_type == "word":
-        query = f'"WordSource:{search_word}"'
+        # query = f'"WordSource:{search_word}"'
+        # query = f'"WordSource:{search_word}" WordDestination:_*'
+        query = f'"WordSource:{search_word}" (WordDestination:_* OR WordSourceMorphologyAI:_*)'
     elif search_type == "sentence":
-        query = f'"SentenceSource:*{search_word}*"'
+        # query = f'"SentenceSource:*{search_word}*"'
+        query = f'"SentenceSource:*{search_word}*" SentenceDestination:_*'
     else:
         raise ValueError("Invalid search_type. Must be 'word' or 'sentence'.")
 
