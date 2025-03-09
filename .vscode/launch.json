@@ -2,12 +2,24 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug Anki Search",
+            "name": "Debug Anki Search — word",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/anki-search.py",
             "args": [
-                "--query", "'SentenceSource:*heute wollen*'"
+                "--query", "test",
+                "--search-type", "word"
+            ], // Параметры передаются здесь
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Debug Anki Search — sentence",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/anki-search.py",
+            "args": [
+                "--query", "heute wollen",
+                "--search-type", "sentence"
             ], // Параметры передаются здесь
             "console": "integratedTerminal"
         },

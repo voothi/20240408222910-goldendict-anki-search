@@ -92,7 +92,7 @@ if __name__ == "__main__":
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Search for a word in any Anki deck")
     parser.add_argument("--query", required=True, help="Word to search for in any Anki deck (e.g., --query \"test\")")
-    parser.add_argument("--search_type", choices=['word', 'sentence'], default='word',
+    parser.add_argument("--search-type", choices=['word', 'sentence'], default='word',
                         help="Type of search: 'word' for WordSource, 'sentence' for SentenceSource (default: word)")
     args = parser.parse_args()
 
