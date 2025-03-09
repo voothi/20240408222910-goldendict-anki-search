@@ -7,7 +7,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/anki-search.py",
             "args": [
-                "test"
+                "--query", "test"
             ], // Параметры передаются здесь
             "console": "integratedTerminal"
         },
