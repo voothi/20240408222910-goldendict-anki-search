@@ -121,5 +121,5 @@ if __name__ == "__main__":
                 print(f"{card['DeckName']}")
             if i != len(result) - 1:  # Check if it's not the last record
                 print("\t")  # Use tab as separator
-    else:
-        print("Nothing found.")
+    # else:
+    #     print("Nothing found.")
