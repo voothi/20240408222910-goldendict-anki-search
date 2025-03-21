@@ -114,7 +114,7 @@ if __name__ == "__main__":
                 else:
                     print("")
             if card['WordSourceIPA']:
-                print(f"{card['WordSourceIPA']}")
+                print(f"[{card['WordSourceIPA']}]")
             if card['SentenceSource']:
                 print(f"{card['SentenceSource']}")
             if card['SentenceDestination']:
