@@ -63,6 +63,7 @@ def search_word_in_decks(search_word, search_type):
             for card in result["result"]:
                 fields = card["fields"]
                 word_source = _strip_html(fields.get("WordSource", {}).get("value", ""))
+                word_source_ipa = _strip_html(fields.get("WordSourceIPA", {}).get("value", ""))
                 word_destination = _strip_html(fields.get("WordDestination", {}).get("value", ""))
                 sentence_source = _strip_html(fields.get("SentenceSource", {}).get("value", ""))
                 sentence_destination = _strip_html(fields.get("SentenceDestination", {}).get("value", ""))
@@ -70,6 +71,7 @@ def search_word_in_decks(search_word, search_type):
                 deck_name = card.get("deckName", None)
                 card_data.append({
                     "WordSource": word_source,
+                    "WordSourceIPA": word_source_ipa,
                     "WordDestination": word_destination,
                     "SentenceSource": sentence_source,
                     "SentenceDestination": sentence_destination,
@@ -111,6 +113,8 @@ if __name__ == "__main__":
                     print(f" – {card['WordDestination']}")
                 else:
                     print("")
+            if card['WordSourceIPA']:
+                print(f"{card['WordSourceIPA']}")
             if card['SentenceSource']:
                 print(f"{card['SentenceSource']}")
             if card['SentenceDestination']:
