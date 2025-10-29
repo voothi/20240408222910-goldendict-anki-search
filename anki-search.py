@@ -114,27 +114,27 @@ if __name__ == "__main__":
             for i, card in enumerate(result):
                 lines = []
                 if card['WordSource']:
-                    line = f"<b>WordSource:</b> {card['WordSource']}"
+                    line = f"{card['WordSource']}"
                     if card['WordDestination']:
                         line += f" – {card['WordDestination']}"
                     lines.append(line)
                 if card['WordSourceIPA']:
-                    lines.append(f"<b>IPA:</b> [{card['WordSourceIPA']}]")
+                    lines.append(f"[{card['WordSourceIPA']}]")
                 if card['SentenceSource']:
-                    lines.append(f"<b>SentenceSource:</b> {card['SentenceSource']}")
+                    lines.append(f"{card['SentenceSource']}")
                 if card['SentenceDestination']:
-                    lines.append(f"<b>SentenceDestination:</b> {card['SentenceDestination']}")
+                    lines.append(f"{card['SentenceDestination']}")
                 if card['SentenceDestination2']:
-                    lines.append(f"<b>SentenceDestination2:</b> {card['SentenceDestination2']}")
+                    lines.append(f"{card['SentenceDestination2']}")
                 if card['WordSourceMorphologyAI']:
-                    lines.append(f"<b>Morphology:</b> {card['WordSourceMorphologyAI']}")
+                    lines.append(f"{card['WordSourceMorphologyAI']}")
                 if card['DeckName']:
-                    lines.append(f"<b>Deck:</b> {card['DeckName']}")
+                    lines.append(f"{card['DeckName']}")
                 
                 print("<br>\n".join(lines))
 
                 if i < len(result) - 1:  # Add a separator between cards
-                    print("<hr>")
+                    print("<br><br>")
         else:
             # --- Plain Text Output Mode (Original) ---
             for i, card in enumerate(result):
@@ -157,6 +157,6 @@ if __name__ == "__main__":
                 if card['DeckName']:
                     print(f"Deck: {card['DeckName']}")
                 if i != len(result) - 1:  # Check if it's not the last record
-                    print("---")  # Using a more visible separator
+                    print("\t")
     # else:
     #     print("Nothing found.")
