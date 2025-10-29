@@ -1,15 +1,16 @@
 # anki-search.py
 import argparse
 import requests
-import re  # Moved import here since it's only used in _strip_html
+import re
 
 
-def search_word_in_decks(search_word, search_type):
+def search_word_in_decks(search_word, search_type, html_output=False):
     """Searches for a word in all Anki decks.
 
     Args:
         search_word: The word to search for.
         search_type:  The type of search to perform ("word" or "sentence").
+        html_output: If True, do not strip HTML tags from the output.
     """
 
     # Anki Connect server address
@@ -17,11 +18,8 @@ def search_word_in_decks(search_word, search_type):
 
     # Build the query to find card IDs
     if search_type == "word":
-        # query = f'"WordSource:{search_word}"'
-        # query = f'"WordSource:{search_word}" WordDestination:_*'
         query = f'"WordSource:{search_word}" (WordDestination:_* OR WordSourceMorphologyAI:_*)'
     elif search_type == "sentence":
-        # query = f'"SentenceSource:*{search_word}*"'
         query = f'"SentenceSource:*{search_word}*" SentenceDestination:_*'
     else:
         raise ValueError("Invalid search_type. Must be 'word' or 'sentence'.")
@@ -35,64 +33,66 @@ def search_word_in_decks(search_word, search_type):
     }
 
     # Send the request to get card IDs
-    response = requests.post(anki_connect_url, json=payload)
+    try:
+        response = requests.post(anki_connect_url, json=payload)
+        response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
+    except requests.exceptions.RequestException as e:
+        print(f"Error connecting to AnkiConnect: {e}")
+        return None
 
     # Handle the results
-    if response.status_code == 200:
-        result = response.json()
-        card_ids = result["result"]
+    result = response.json()
+    card_ids = result.get("result")
 
-        if not card_ids:
-            return None  # No cards found
+    if not card_ids:
+        return None  # No cards found
 
-        # Build the query to get card information
-        payload = {
-            "action": "cardsInfo",
-            "version": 6,
-            "params": {
-                "cards": card_ids
-            }
+    # Build the query to get card information
+    payload = {
+        "action": "cardsInfo",
+        "version": 6,
+        "params": {
+            "cards": card_ids
         }
+    }
 
-        # Send the request to get card information
+    # Send the request to get card information
+    try:
         response = requests.post(anki_connect_url, json=payload)
-
-        if response.status_code == 200:
-            result = response.json()
-            card_data = []
-            for card in result["result"]:
-                fields = card["fields"]
-                word_source = _strip_html(fields.get("WordSource", {}).get("value", ""))
-                word_source_ipa = _strip_html(fields.get("WordSourceIPA", {}).get("value", ""))
-                word_destination = _strip_html(fields.get("WordDestination", {}).get("value", ""))
-                sentence_source = _strip_html(fields.get("SentenceSource", {}).get("value", ""))
-                sentence_destination = _strip_html(fields.get("SentenceDestination", {}).get("value", ""))
-                sentence_destination2 = _strip_html(fields.get("SentenceDestination2", {}).get("value", ""))
-                word_morphology = _strip_html(fields.get("WordSourceMorphologyAI", {}).get("value", ""))
-                deck_name = card.get("deckName", None)
-                card_data.append({
-                    "WordSource": word_source,
-                    "WordSourceIPA": word_source_ipa,
-                    "WordDestination": word_destination,
-                    "SentenceSource": sentence_source,
-                    "SentenceDestination": sentence_destination,
-                    "SentenceDestination2": sentence_destination2,
-                    "WordSourceMorphologyAI": word_morphology,
-                    "DeckName": deck_name
-                })
-            return card_data
-        else:
-            print("Error retrieving card information:", response.status_code)
-            return None
-    else:
-        print("Error sending search query:", response.status_code)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(f"Error retrieving card information: {e}")
         return None
+
+    result = response.json()
+    card_data = []
+    for card in result.get("result", []):
+        fields = card.get("fields", {})
+
+        def get_field_value(field_name):
+            """Gets a field's value, optionally stripping HTML."""
+            value = fields.get(field_name, {}).get("value", "")
+            return value if html_output else _strip_html(value)
+
+        card_data.append({
+            "WordSource": get_field_value("WordSource"),
+            "WordSourceIPA": get_field_value("WordSourceIPA"),
+            "WordDestination": get_field_value("WordDestination"),
+            "SentenceSource": get_field_value("SentenceSource"),
+            "SentenceDestination": get_field_value("SentenceDestination"),
+            "SentenceDestination2": get_field_value("SentenceDestination2"),
+            "WordSourceMorphologyAI": get_field_value("WordSourceMorphologyAI"),
+            "DeckName": card.get("deckName", "")
+        })
+    return card_data
 
 
 def _strip_html(text):
     """Removes basic HTML tags from text."""
     clean = re.compile('<.*?>')
-    return re.sub(clean, ' ', text)
+    # Replace tags with a space and then clean up multiple spaces
+    text = re.sub(clean, ' ', text)
+    return ' '.join(text.split())
 
 
 if __name__ == "__main__":
@@ -101,33 +101,62 @@ if __name__ == "__main__":
     parser.add_argument("--query", required=True, help="Word to search for in any Anki deck (e.g., --query \"test\")")
     parser.add_argument("--search-type", choices=['word', 'sentence'], default='word',
                         help="Type of search: 'word' for WordSource, 'sentence' for SentenceSource (default: word)")
+    parser.add_argument("--html", action="store_true", help="Output results in HTML format with line breaks.")
     args = parser.parse_args()
 
-    # Perform the search
-    result = search_word_in_decks(args.query, args.search_type)
+    # Perform the search, passing the html flag
+    result = search_word_in_decks(args.query, args.search_type, html_output=args.html)
 
     # Output the results
     if result:
-        for i, card in enumerate(result):
-            if card['WordSource']:
-                print(f"{card['WordSource']}", end='')
-                if card['WordDestination']:
-                    print(f" – {card['WordDestination']}")
-                else:
-                    print("")
-            if card['WordSourceIPA']:
-                print(f"[{card['WordSourceIPA']}]")
-            if card['SentenceSource']:
-                print(f"{card['SentenceSource']}")
-            if card['SentenceDestination']:
-                print(f"{card['SentenceDestination']}")
-            if card['SentenceDestination2']:
-                print(f"{card['SentenceDestination2']}")
-            if card['WordSourceMorphologyAI']:
-                print(f"{card['WordSourceMorphologyAI']}")
-            if card['DeckName']:
-                print(f"{card['DeckName']}")
-            if i != len(result) - 1:  # Check if it's not the last record
-                print("\t")  # Use tab as separator
+        if args.html:
+            # --- HTML Output Mode ---
+            for i, card in enumerate(result):
+                lines = []
+                if card['WordSource']:
+                    line = f"<b>WordSource:</b> {card['WordSource']}"
+                    if card['WordDestination']:
+                        line += f" – {card['WordDestination']}"
+                    lines.append(line)
+                if card['WordSourceIPA']:
+                    lines.append(f"<b>IPA:</b> [{card['WordSourceIPA']}]")
+                if card['SentenceSource']:
+                    lines.append(f"<b>SentenceSource:</b> {card['SentenceSource']}")
+                if card['SentenceDestination']:
+                    lines.append(f"<b>SentenceDestination:</b> {card['SentenceDestination']}")
+                if card['SentenceDestination2']:
+                    lines.append(f"<b>SentenceDestination2:</b> {card['SentenceDestination2']}")
+                if card['WordSourceMorphologyAI']:
+                    lines.append(f"<b>Morphology:</b> {card['WordSourceMorphologyAI']}")
+                if card['DeckName']:
+                    lines.append(f"<b>Deck:</b> {card['DeckName']}")
+                
+                print("<br>\n".join(lines))
+
+                if i < len(result) - 1:  # Add a separator between cards
+                    print("<hr>")
+        else:
+            # --- Plain Text Output Mode (Original) ---
+            for i, card in enumerate(result):
+                if card['WordSource']:
+                    print(f"{card['WordSource']}", end='')
+                    if card['WordDestination']:
+                        print(f" – {card['WordDestination']}")
+                    else:
+                        print("")
+                if card['WordSourceIPA']:
+                    print(f"[{card['WordSourceIPA']}]")
+                if card['SentenceSource']:
+                    print(f"{card['SentenceSource']}")
+                if card['SentenceDestination']:
+                    print(f"{card['SentenceDestination']}")
+                if card['SentenceDestination2']:
+                    print(f"{card['SentenceDestination2']}")
+                if card['WordSourceMorphologyAI']:
+                    print(f"{card['WordSourceMorphologyAI']}")
+                if card['DeckName']:
+                    print(f"Deck: {card['DeckName']}")
+                if i != len(result) - 1:  # Check if it's not the last record
+                    print("---")  # Using a more visible separator
     # else:
     #     print("Nothing found.")
