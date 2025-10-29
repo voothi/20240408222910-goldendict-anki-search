@@ -67,6 +67,7 @@ def search_word_in_decks(search_word, search_type):
                 word_destination = _strip_html(fields.get("WordDestination", {}).get("value", ""))
                 sentence_source = _strip_html(fields.get("SentenceSource", {}).get("value", ""))
                 sentence_destination = _strip_html(fields.get("SentenceDestination", {}).get("value", ""))
+                sentence_destination2 = _strip_html(fields.get("SentenceDestination2", {}).get("value", ""))
                 word_morphology = _strip_html(fields.get("WordSourceMorphologyAI", {}).get("value", ""))
                 deck_name = card.get("deckName", None)
                 card_data.append({
@@ -75,6 +76,7 @@ def search_word_in_decks(search_word, search_type):
                     "WordDestination": word_destination,
                     "SentenceSource": sentence_source,
                     "SentenceDestination": sentence_destination,
+                    "SentenceDestination2": sentence_destination2,
                     "WordSourceMorphologyAI": word_morphology,
                     "DeckName": deck_name
                 })
@@ -119,6 +121,8 @@ if __name__ == "__main__":
                 print(f"{card['SentenceSource']}")
             if card['SentenceDestination']:
                 print(f"{card['SentenceDestination']}")
+            if card['SentenceDestination2']:
+                print(f"{card['SentenceDestination2']}")
             if card['WordSourceMorphologyAI']:
                 print(f"{card['WordSourceMorphologyAI']}")
             if card['DeckName']:
