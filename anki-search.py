@@ -129,7 +129,7 @@ if __name__ == "__main__":
                 if card['WordSourceMorphologyAI']:
                     lines.append(f"{card['WordSourceMorphologyAI']}")
                 if card['DeckName']:
-                    lines.append(f"{card['DeckName']}")
+                    lines.append(f"deck:{card['DeckName']}")
                 
                 print("<br>\n".join(lines))
 
@@ -141,7 +141,7 @@ if __name__ == "__main__":
                 if card['WordSource']:
                     print(f"{card['WordSource']}", end='')
                     if card['WordDestination']:
-                        print(f" – {card['WordDestination']}")
+                        print(f" — {card['WordDestination']}")
                     else:
                         print("")
                 if card['WordSourceIPA']:
@@ -155,7 +155,7 @@ if __name__ == "__main__":
                 if card['WordSourceMorphologyAI']:
                     print(f"{card['WordSourceMorphologyAI']}")
                 if card['DeckName']:
-                    print(f"Deck: {card['DeckName']}")
+                    print(f"deck:{card['DeckName']}")
                 if i != len(result) - 1:  # Check if it's not the last record
                     print("\t")
     # else:
