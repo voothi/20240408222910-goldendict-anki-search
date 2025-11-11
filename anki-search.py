@@ -18,7 +18,7 @@ def search_word_in_decks(search_word, search_type, html_output=False):
 
     # Build the query to find card IDs
     if search_type == "word":
-        query = f'"WordSource:{search_word}"'
+        query = f'"WordSource:{search_word}" (WordDestination:_* OR SentenceDestination:_* OR WordSourceMorphologyAI:_*)'
     elif search_type == "sentence":
         query = f'"SentenceSource:*{search_word}*" SentenceDestination:_*'
     else:
