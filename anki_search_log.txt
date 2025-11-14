@@ -1,0 +1,12 @@
+2025-11-14 21:59:47,802 - INFO - Script started.
+2025-11-14 21:59:47,803 - INFO - Mode: --browse-clipboard activated.
+2025-11-14 21:59:47,976 - INFO - Clipboard content found: '--browse-clipboard...'
+2025-11-14 21:59:47,976 - INFO - Attempting to open Anki Browser with query: '--browse-clipboard'
+2025-11-14 21:59:50,442 - INFO - Successfully sent query to Anki Browser.
+2025-11-14 21:59:50,444 - INFO - Script finished.
+2025-11-14 22:00:15,760 - INFO - Script started.
+2025-11-14 22:00:15,761 - INFO - Mode: --browse-clipboard activated.
+2025-11-14 22:00:15,892 - INFO - Clipboard content found: 'deck:200300-de-it-praktikum::20251112065516-ifp-gesellschaft-fuer-fortbildung-und.triple.de::100022-...'
+2025-11-14 22:00:15,895 - INFO - Attempting to open Anki Browser with query: 'deck:200300-de-it-praktikum::20251112065516-ifp-gesellschaft-fuer-fortbildung-und.triple.de::100022-mein-leben-ein-ueberblick::000148-moeglicherweise-treffen-eine-reihe'
+2025-11-14 22:00:18,150 - INFO - Successfully sent query to Anki Browser.
+2025-11-14 22:00:18,150 - INFO - Script finished.
