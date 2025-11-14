@@ -79,6 +79,7 @@ def search_word_in_decks(search_word, search_type, html_output=False):
             "WordSourceIPA": get_field_value("WordSourceIPA"),
             "WordDestination": get_field_value("WordDestination"),
             "SentenceSource": get_field_value("SentenceSource"),
+            "WordSourceInflectedForm": get_field_value("WordSourceInflectedForm"),
             "SentenceDestination": get_field_value("SentenceDestination"),
             "SentenceDestination2": get_field_value("SentenceDestination2"),
             "WordSourceMorphologyAI": get_field_value("WordSourceMorphologyAI"),
@@ -120,6 +121,8 @@ if __name__ == "__main__":
                     lines.append(line)
                 if card['WordSourceIPA']:
                     lines.append(f"[{card['WordSourceIPA']}]")
+                if card['WordSourceInflectedForm']:
+                    lines.append(f"{card['WordSourceInflectedForm']}")
                 if card['SentenceSource']:
                     lines.append(f"{card['SentenceSource']}")
                 if card['SentenceDestination']:
@@ -130,7 +133,7 @@ if __name__ == "__main__":
                     lines.append(f"{card['WordSourceMorphologyAI']}")
                 if card['DeckName']:
                     lines.append(f"deck:{card['DeckName']}")
-                
+
                 print("<br>\n".join(lines))
 
                 if i < len(result) - 1:  # Add a separator between cards
@@ -146,6 +149,8 @@ if __name__ == "__main__":
                         print("")
                 if card['WordSourceIPA']:
                     print(f"[{card['WordSourceIPA']}]")
+                if card['WordSourceInflectedForm']:
+                    print(f"{card['WordSourceInflectedForm']}")
                 if card['SentenceSource']:
                     print(f"{card['SentenceSource']}")
                 if card['SentenceDestination']:
