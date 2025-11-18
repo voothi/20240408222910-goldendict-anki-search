@@ -175,7 +175,7 @@ if __name__ == "__main__":
                     # Add other fields if they exist
                     if card['WordSourceIPA']: lines.append(f"[{card['WordSourceIPA']}]")
                     if card['WordSourceInflectedForm']: lines.append(f"{card['WordSourceInflectedForm']}")
-                    if card['SentenceSource']: lines.append(f"> {card['SentenceSource']}")
+                    if card['SentenceSource']: lines.append(f"{card['SentenceSource']}")
                     if card['SentenceDestination']: lines.append(f"> {card['SentenceDestination']}")
                     if card['SentenceDestination2']: lines.append(f"> {card['SentenceDestination2']}")
                     if card['WordSourceMorphologyAI']: lines.append(f"{card['WordSourceMorphologyAI']}")
@@ -196,7 +196,7 @@ if __name__ == "__main__":
                             print("")
                     if card['WordSourceIPA']: print(f"[{card['WordSourceIPA']}]")
                     if card['WordSourceInflectedForm']: print(f"{card['WordSourceInflectedForm']}")
-                    if card['SentenceSource']: print(f"> {card['SentenceSource']}")
+                    if card['SentenceSource']: print(f"{card['SentenceSource']}")
                     if card['SentenceDestination']: print(f"> {card['SentenceDestination']}")
                     if card['SentenceDestination2']: print(f"> {card['SentenceDestination2']}")
                     if card['WordSourceMorphologyAI']: print(f"{card['WordSourceMorphologyAI']}")
