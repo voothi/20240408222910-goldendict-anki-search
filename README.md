@@ -21,6 +21,7 @@ This script provides two main functionalities for interacting with your Anki col
     - [Configuration](#configuration)
     - [How to Use](#how-to-use)
   - [How It Works](#how-it-works)
+  - [Kardenwort Ecosystem](#kardenwort-ecosystem)
   - [License](#license)
 
 ## Usage
@@ -123,6 +124,12 @@ Once the AHK script is configured and running, you have two ways to search from 
 -   **Clipboard Bridge**: The `--browse-clipboard` argument acts as a bridge for other applications. The AutoHotkey script copies the selected text to the clipboard and then calls this Python script with that argument, which in turn tells Anki to search for the clipboard's content.
 
 [Back to Top](#table-of-contents)
+
+## Kardenwort Ecosystem
+
+This project is part of the **[Kardenwort](https://github.com/kardenwort)** environment, designed to create a focused and efficient learning ecosystem.
+
+[Return to Top](#table-of-contents)
 
 ## License
 
