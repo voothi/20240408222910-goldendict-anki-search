@@ -24,6 +24,8 @@ This script provides two main functionalities for interacting with your Anki col
   - [Kardenwort Ecosystem](#kardenwort-ecosystem)
   - [License](#license)
 
+---
+
 ## Usage
 
 The script is controlled via command-line arguments.
