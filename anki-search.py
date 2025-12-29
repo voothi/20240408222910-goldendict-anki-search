@@ -67,12 +67,8 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
     # Map of short language codes to common dialect specific field suffixes.
     # This allows searching for "en" to find "en-gb", "en-us", etc.
     LANGUAGE_VARIANTS = {
-        'en': ['en', 'en-gb', 'en-us', 'en-au', 'en-ca'],
-        'de': ['de', 'de-de', 'de-at', 'de-ch'],
-        'ru': ['ru', 'ru-ru'],
-        'fr': ['fr', 'fr-fr', 'fr-ca'],
-        'es': ['es', 'es-es', 'es-mx'],
-        'it': ['it', 'it-it']
+        'en': ['en-gb', 'en-us'],
+        'de': ['de-de'],
     }
 
     # Dynamic Condition: Language Filter (Optional)
