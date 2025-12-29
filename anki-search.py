@@ -45,13 +45,15 @@ def open_in_anki_browser(query: str):
     except requests.exceptions.RequestException as e:
         print(f"Error sending command to AnkiConnect: {e}")
 
-def search_word_in_decks(search_word: str, search_type: str, html_output: bool = False) -> list[dict] | None:
+def search_word_in_decks(search_word: str, search_type: str, languages: list[str] | None = None, html_output: bool = False) -> list[dict] | None:
     """
     Searches for cards based on a word or sentence and returns their data.
 
     Args:
         search_word (str): The term to search for.
         search_type (str): The type of search, either 'word' or 'sentence'.
+        languages (list[str] | None): A list of language codes to filter by (e.g., ['en', 'ru']).
+                                      If None or empty, searches all languages.
         html_output (bool): If True, field values are returned with HTML tags.
                             If False, HTML tags are stripped.
 
@@ -61,13 +63,23 @@ def search_word_in_decks(search_word: str, search_type: str, html_output: bool =
     """
     anki_connect_url = "http://localhost:8765"
 
+    # Construct the language filter part of the query.
+    if languages:
+        # Create an OR condition for each specified language, e.g., "WordDestination:*source-en-*" OR "WordDestination:*source-ru-*"
+        lang_conditions = " OR ".join([f'WordDestination:*source-{lang}-*' for lang in languages])
+        destination_filter = f'({lang_conditions})'
+    else:
+        # Default behavior: Ensure at least one destination field is not empty.
+        destination_filter = '(WordDestination:_* OR SentenceDestination:_* OR SentenceDestination2:_* OR WordSourceMorphologyAI:_*)'
+
     # Construct a complex query based on the search type.
-    # This query looks for the search term in specific source fields and ensures
-    # that corresponding destination fields are not empty.
     if search_type == "word":
-        query = f'("WordSource:*{search_word}*" OR "WordSourceInflectedForm:*{search_word}*") (WordDestination:_* OR SentenceDestination:_* OR SentenceDestination2:_* OR WordSourceMorphologyAI:_*)'
+        query = f'("WordSource:*{search_word}*" OR "WordSourceInflectedForm:*{search_word}*") {destination_filter}'
     elif search_type == "sentence":
-        query = f'"SentenceSource:*{search_word}*" SentenceDestination:_* WordSource:'
+        # Note: Sentence search currently relies heavily on SentenceDestination being present.
+        # If filtering by language via WordDestination, we might need to adjust this logic if strict language matching is required for sentences too.
+        # However, per current requirements focusing on the "key" which implies WordDestination tags:
+        query = f'"SentenceSource:*{search_word}*" {destination_filter} WordSource:'
     else:
         raise ValueError("Invalid search_type. Must be 'word' or 'sentence'.")
 
@@ -140,6 +152,8 @@ if __name__ == "__main__":
     search_group.add_argument("--query", help="Word to search for in any Anki deck (e.g., --query \"test\")")
     search_group.add_argument("--search-type", choices=['word', 'sentence'], default='word',
                         help="Type of search: 'word' for WordSource, 'sentence' for SentenceSource (default: word)")
+    search_group.add_argument("--lang", nargs='+',
+                        help="List of languages to filter by (e.g., --lang en ru). Filters based on 'source-{lang}-' tag in WordDestination.")
     search_group.add_argument("--html", action="store_true", help="Output search results in HTML format.")
 
     browse_group = parser.add_argument_group('Browser arguments')
@@ -161,7 +175,7 @@ if __name__ == "__main__":
         open_in_anki_browser(args.browse_query)
     # Priority 3: If a search query is given, perform the search and print results.
     elif args.query:
-        result = search_word_in_decks(args.query, args.search_type, html_output=args.html)
+        result = search_word_in_decks(args.query, args.search_type, languages=args.lang, html_output=args.html)
         if result:
             # Format and print the results based on whether HTML output is requested.
             if args.html:
