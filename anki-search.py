@@ -63,31 +63,27 @@ def search_word_in_decks(search_word: str, search_type: str, languages: list[str
     """
     anki_connect_url = "http://localhost:8765"
 
-    # Construct the language filter part of the query.
-    if languages:
-        # The user wants to filter by language across ALL destination fields, not just WordDestination.
-        # We check provided languages against all potential destination fields.
-        dest_fields = ["WordDestination", "SentenceDestination", "SentenceDestination2", "WordSourceMorphologyAI"]
-        
-        conditions = []
-        for lang in languages:
-            for field in dest_fields:
-                conditions.append(f'{field}:*source-{lang}-*')
-        
-        # Combine all conditions with OR. e.g. (WordDestination:*source-en-* OR SentenceDestination:*source-en-* ...)
-        destination_filter = f'({" OR ".join(conditions)})'
-    else:
-        # Default behavior: Ensure at least one destination field is not empty.
-        destination_filter = '(WordDestination:_* OR SentenceDestination:_* OR SentenceDestination2:_* OR WordSourceMorphologyAI:_*)'
+    # 1. Static Condition: Ensure at least one destination field is not empty.
+    # This identifies the card as having a valid destination, regardless of language.
+    destination_check = '(WordDestination:_* OR SentenceDestination:_* OR SentenceDestination2:_* OR WordSourceMorphologyAI:_*)'
 
-    # Construct a complex query based on the search type.
+    # 2. Dynamic Condition: Language Filter (Optional)
+    # If languages are specified, we add a filter to ensure the content contains the specific language tag.
+    # We use a global search (no field prefix) or specific field patterns to satisfy the "not depend on field name" requirement
+    # while acting as an additional filter on top of the static condition.
+    language_filter = ""
+    if languages:
+        # Construct global terms for each language tag, e.g. (*source-en-* OR *source-ru-*)
+        # Using *source-{lang}-* ensures we match the tag format irrespective of which field it resides in.
+        lang_conditions = " OR ".join([f'*source-{lang}-*' for lang in languages])
+        language_filter = f' ({lang_conditions})'
+
+    # Construct the final query.
     if search_type == "word":
-        query = f'("WordSource:*{search_word}*" OR "WordSourceInflectedForm:*{search_word}*") {destination_filter}'
+        query = f'("WordSource:*{search_word}*" OR "WordSourceInflectedForm:*{search_word}*") {destination_check}{language_filter}'
     elif search_type == "sentence":
-        # Note: Sentence search currently relies heavily on SentenceDestination being present.
-        # If filtering by language via WordDestination, we might need to adjust this logic if strict language matching is required for sentences too.
-        # However, per current requirements focusing on the "key" which implies WordDestination tags:
-        query = f'"SentenceSource:*{search_word}*" {destination_filter} WordSource:'
+        # Note: Sentence search also respects the language filter now.
+        query = f'"SentenceSource:*{search_word}*" {destination_check}{language_filter} WordSource:'
     else:
         raise ValueError("Invalid search_type. Must be 'word' or 'sentence'.")
 
