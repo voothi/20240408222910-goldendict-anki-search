@@ -84,12 +84,12 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
             conditions = []
             for lang in languages:
                 if lang.startswith("source-"):
-                    conditions.append(f'*{lang}*:_*')
+                    conditions.append(f'{lang}:_*')
                 else:
                     # Expand short code to dialects if available
                     langs_to_check = LANGUAGE_VARIANTS.get(lang, [lang])
                     for variant in langs_to_check:
-                         conditions.append(f'*source-{variant}*:_*')
+                         conditions.append(f'source-{variant}:_*')
             
             lang_conditions = " OR ".join(conditions)
             language_filter = f' ({lang_conditions})'
@@ -105,12 +105,12 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
             conditions = []
             for lang in languages:
                 if lang.startswith("source-"):
-                    conditions.append(f'*{lang}*:_*')
+                    conditions.append(f'{lang}:_*')
                 else:
                     # Expand short code to dialects if available
                     langs_to_check = LANGUAGE_VARIANTS.get(lang, [lang])
                     for variant in langs_to_check:
-                         conditions.append(f'*source-{variant}*:_*')
+                         conditions.append(f'source-{variant}:_*')
 
             lang_conditions = " OR ".join(conditions)
             language_filter = f' ({lang_conditions})'
