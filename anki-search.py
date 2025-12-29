@@ -67,29 +67,40 @@ def search_word_in_decks(search_word: str, search_type: str, languages: list[str
     # If languages are specified, we add a filter to ensure the content contains the specific language tag.
     # We use a global search (no field prefix) or specific field patterns to satisfy the "not depend on field name" requirement
     # while acting as an additional filter on top of the static condition.
-    language_filter = ""
-    if languages:
-        # Construct global terms for each language tag.
-        # If the user provides a full tag (starts with "source-"), use it directly.
-        # Otherwise, assume it's a language code and wrap it in the standard tag format.
-        conditions = []
-        for lang in languages:
-            if lang.startswith("source-"):
-                conditions.append(f'*{lang}*')
-            else:
-                conditions.append(f'*source-{lang}-*:_*')
-        
-        lang_conditions = " OR ".join(conditions)
-        language_filter = f' ({lang_conditions})'
-
     # Construct the final query.
     if search_type == "word":
+        # Dynamic Condition for Words: Global/Flexible language search (User preferred syntax)
+        language_filter = ""
+        if languages:
+            conditions = []
+            for lang in languages:
+                if lang.startswith("source-"):
+                    conditions.append(f'*{lang}*')
+                else:
+                    conditions.append(f'*source-{lang}-*:_*')
+            lang_conditions = " OR ".join(conditions)
+            language_filter = f' ({lang_conditions})'
+
         # Static Condition for Words: Ensure at least one of the many destination fields is not empty.
         destination_check = '(WordDestination:_* OR SentenceDestination:_* OR SentenceDestination2:_* OR WordSourceMorphologyAI:_*)'
         query = f'("WordSource:*{search_word}*" OR "WordSourceInflectedForm:*{search_word}*") {destination_check}{language_filter}'
+
     elif search_type == "sentence":
+        # Dynamic Condition for Sentences: Strict Check on SentenceDestination
+        # Prevents false positives where 'WordDestination' matches the language but 'SentenceDestination' does not.
+        language_filter = ""
+        if languages:
+            conditions = []
+            for lang in languages:
+                # If full tag provided, assume it applies to SentenceDestination if it's a value search
+                if lang.startswith("source-"):
+                     conditions.append(f'SentenceDestination:*{lang}*')
+                else:
+                     conditions.append(f'SentenceDestination:*source-{lang}-*')
+            lang_conditions = " OR ".join(conditions)
+            language_filter = f' ({lang_conditions})'
+
         # Static Condition for Sentences: Strict check on SentenceDestination being present and WordSource being empty.
-        # This restores the original behavior for sentence searches.
         destination_check = 'SentenceDestination:_* WordSource:'
         query = f'"SentenceSource:*{search_word}*" {destination_check}{language_filter}'
     else:
