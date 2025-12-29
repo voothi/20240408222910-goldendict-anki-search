@@ -26,6 +26,9 @@ from typing import Optional, List
 ANKI_CONNECT_URL = 'http://localhost:8765'
 BATCH_SIZE = 100
 
+# Reuse TCP connection for faster sequential requests
+_session = requests.Session()
+
 
 def make_ac_request(action, **params):
     """Create AnkiConnect request payload."""
@@ -43,7 +46,7 @@ def invoke_ac(action, **params):
     """Execute single AnkiConnect action."""
     payload = make_ac_request(action, **params)
     try:
-        response = requests.post(ANKI_CONNECT_URL, json=payload).json()
+        response = _session.post(ANKI_CONNECT_URL, json=payload).json()
     except requests.exceptions.ConnectionError:
         print('[E] Anki is not running or AnkiConnect is not installed', file=sys.stderr)
         sys.exit(1)
