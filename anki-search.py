@@ -82,7 +82,7 @@ def search_word_in_decks(search_word: str, search_type: str, languages: list[str
     elif search_type == "sentence":
         # Static Condition for Sentences: Strict check on SentenceDestination being present and WordSource being empty.
         # This restores the original behavior for sentence searches.
-        destination_check = 'SentenceDestination:_* SentenceDestination2:_* WordSource:'
+        destination_check = 'SentenceDestination:_* WordSource:'
         query = f'"SentenceSource:*{search_word}*" {destination_check}{language_filter}'
     else:
         raise ValueError("Invalid search_type. Must be 'word' or 'sentence'.")
@@ -156,8 +156,8 @@ if __name__ == "__main__":
     search_group.add_argument("--query", help="Word to search for in any Anki deck (e.g., --query \"test\")")
     search_group.add_argument("--search-type", choices=['word', 'sentence'], default='word',
                         help="Type of search: 'word' for WordSource, 'sentence' for SentenceSource (default: word)")
-    search_group.add_argument("--lang", nargs='+',
-                        help="List of languages to filter by (e.g., --lang en ru). Filters based on 'source-{lang}-' tag in WordDestination.")
+    search_group.add_argument("--languages", "--lang", nargs='+',
+                        help="List of languages to filter by (e.g., --languages en ru). Filters based on 'source-{lang}-' tag in WordDestination.")
     search_group.add_argument("--html", action="store_true", help="Output search results in HTML format.")
 
     browse_group = parser.add_argument_group('Browser arguments')
@@ -179,7 +179,7 @@ if __name__ == "__main__":
         open_in_anki_browser(args.browse_query)
     # Priority 3: If a search query is given, perform the search and print results.
     elif args.query:
-        result = search_word_in_decks(args.query, args.search_type, languages=args.lang, html_output=args.html)
+        result = search_word_in_decks(args.query, args.search_type, languages=args.languages, html_output=args.html)
         if result:
             # Format and print the results based on whether HTML output is requested.
             if args.html:
