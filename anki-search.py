@@ -75,9 +75,9 @@ def search_word_in_decks(search_word: str, search_type: str, languages: list[str
             conditions = []
             for lang in languages:
                 if lang.startswith("source-"):
-                    conditions.append(f'*{lang}*')
+                    conditions.append(f'*{lang}*:_*')
                 else:
-                    conditions.append(f'*source-{lang}-*:_*')
+                    conditions.append(f'*source-{lang}*:_*')
             lang_conditions = " OR ".join(conditions)
             language_filter = f' ({lang_conditions})'
 
@@ -92,9 +92,9 @@ def search_word_in_decks(search_word: str, search_type: str, languages: list[str
             conditions = []
             for lang in languages:
                 if lang.startswith("source-"):
-                    conditions.append(f'*{lang}*')
+                    conditions.append(f'*{lang}*:_*')
                 else:
-                    conditions.append(f'*source-{lang}-*:_*')
+                    conditions.append(f'*source-{lang}*:_*')
             lang_conditions = " OR ".join(conditions)
             language_filter = f' ({lang_conditions})'
 
