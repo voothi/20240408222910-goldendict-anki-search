@@ -1,5 +1,17 @@
 # Release Notes
 
+## v1.46.12 (2025-12-29)
+
+### Improvements
+- **AnkiConnect Optimization**: Refactored API calls with helper functions for cleaner code
+- **TCP Connection Reuse**: Added `requests.Session()` to reduce connection overhead
+- **Better Error Messages**: Clear "[E] Anki is not running" on connection failure
+- **Code Cleanup**: Removed ~40 lines of duplicate payload construction
+
+[Return to Top](#release-notes)
+
+---
+
 ## v1.46.2 (2025-12-29)
 
 ### New Features
@@ -11,3 +23,6 @@
 ### Improvements
 - **Optimized Language Variants**: Removed base language codes from expansion lists to prevent Anki query parsing issues with overly broad wildcards.
 - **Python 3.9 Compatibility**: Updated type hints to use `typing.Optional` and `typing.List` for compatibility with Python 3.9+.
+
+[Return to Top](#release-notes)
+

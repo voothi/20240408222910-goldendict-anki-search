@@ -2,7 +2,7 @@
 
 A command-line utility to interact with Anki via the AnkiConnect add-on.
 
-[![Version](https://img.shields.io/badge/version-v1.46.2-blue)](https://github.com/voothi/20240408222910-goldendict-anki-search) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-v1.46.12-blue)](https://github.com/voothi/20240408222910-goldendict-anki-search) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 This script provides two main functionalities for interacting with your Anki collection from the command line:
 
