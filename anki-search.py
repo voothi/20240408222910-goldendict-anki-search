@@ -69,6 +69,8 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
     LANGUAGE_VARIANTS = {
         'en': ['en-gb', 'en-us'],
         'de': ['de-de'],
+        'ru': ['ru-ru'],
+        'uk': ['uk-ua'],
     }
 
     # Dynamic Condition: Language Filter (Optional)
