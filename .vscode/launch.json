@@ -18,6 +18,22 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Debug Anki Search — Wroclaw (De)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/anki-search.py",
+            "args": [
+                "--query",
+                "ly Wroclaw is left, it turns",
+                "--search-type",
+                "sentence",
+                "--html",
+                "--languages",
+                "en"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Debug Anki Search — word",
             "type": "debugpy",
             "request": "launch",
