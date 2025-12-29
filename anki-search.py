@@ -77,7 +77,7 @@ def search_word_in_decks(search_word: str, search_type: str, languages: list[str
             if lang.startswith("source-"):
                 conditions.append(f'*{lang}*')
             else:
-                conditions.append(f'*source-{lang}-*')
+                conditions.append(f'*source-{lang}-*:_*')
         
         lang_conditions = " OR ".join(conditions)
         language_filter = f' ({lang_conditions})'
