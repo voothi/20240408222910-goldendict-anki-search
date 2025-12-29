@@ -63,11 +63,7 @@ def search_word_in_decks(search_word: str, search_type: str, languages: list[str
     """
     anki_connect_url = "http://localhost:8765"
 
-    # 1. Static Condition: Ensure at least one destination field is not empty.
-    # This identifies the card as having a valid destination, regardless of language.
-    destination_check = '(WordDestination:_* OR SentenceDestination:_* OR SentenceDestination2:_* OR WordSourceMorphologyAI:_*)'
-
-    # 2. Dynamic Condition: Language Filter (Optional)
+    # Dynamic Condition: Language Filter (Optional)
     # If languages are specified, we add a filter to ensure the content contains the specific language tag.
     # We use a global search (no field prefix) or specific field patterns to satisfy the "not depend on field name" requirement
     # while acting as an additional filter on top of the static condition.
@@ -80,10 +76,14 @@ def search_word_in_decks(search_word: str, search_type: str, languages: list[str
 
     # Construct the final query.
     if search_type == "word":
+        # Static Condition for Words: Ensure at least one of the many destination fields is not empty.
+        destination_check = '(WordDestination:_* OR SentenceDestination:_* OR SentenceDestination2:_* OR WordSourceMorphologyAI:_*)'
         query = f'("WordSource:*{search_word}*" OR "WordSourceInflectedForm:*{search_word}*") {destination_check}{language_filter}'
     elif search_type == "sentence":
-        # Note: Sentence search also respects the language filter now.
-        query = f'"SentenceSource:*{search_word}*" {destination_check}{language_filter} WordSource:'
+        # Static Condition for Sentences: Strict check on SentenceDestination being present and WordSource being empty.
+        # This restores the original behavior for sentence searches.
+        destination_check = 'SentenceDestination:_* SentenceDestination2:_* WordSource:'
+        query = f'"SentenceSource:*{search_word}*" {destination_check}{language_filter}'
     else:
         raise ValueError("Invalid search_type. Must be 'word' or 'sentence'.")
 
