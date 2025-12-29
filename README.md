@@ -2,7 +2,7 @@
 
 A command-line utility to interact with Anki via the AnkiConnect add-on.
 
-[![Version](https://img.shields.io/badge/version-v1.44.2-blue)](https://github.com/voothi/20240408222910-goldendict-anki-search) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-v1.46.2-blue)](https://github.com/voothi/20240408222910-goldendict-anki-search) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 This script provides two main functionalities for interacting with your Anki collection from the command line:
 
@@ -34,6 +34,7 @@ The script is controlled via command-line arguments.
 | ---------------------- | ------------------------------------------------------------------------------------------------------- | :------: |
 | `--query`              | The word or phrase to search for in Anki notes.                                                         |    No    |
 | `--search-type`        | Type of search: `word` (default) or `sentence`. Affects which fields are queried.                       |    No    |
+| `--languages`          | Filter results by language (e.g., `en`, `de`). Supports short codes (`en`) or full tags. `<br>` Alias: `--lang`. |    No    |
 | `--html`               | If present, outputs search results with HTML formatting preserved.                                      |    No    |
 | `--browse-query`       | A query string to open directly in the Anki Card Browser (e.g., `"deck:MyDeck is:due"`).                |    No    |
 | `--browse-clipboard`   | If present, uses the content of the system clipboard as the query to open in the Anki Card Browser.     |    No    |
@@ -68,6 +69,10 @@ The script is controlled via command-line arguments.
 ```bash
 # Search for the word "example" and print results as plain text
 ./anki-search.py --query "example"
+
+# Search for "hello" filtering for English cards (expands to en-gb, en-us, etc.)
+./anki-search.py --query "with" --languages en
+./anki-search.py --query "mit" --languages de
 
 # Search for a sentence and print results in HTML format
 ./anki-search.py --query "this is a test sentence" --search-type sentence --html
