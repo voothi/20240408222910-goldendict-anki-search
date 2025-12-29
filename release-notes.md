@@ -6,4 +6,8 @@
 - **Multi-Language Search**: Added `--languages` (alias `--lang`) argument to filter search results by language.
   - Supports short codes (e.g., `en`, `de`) which automatically expand to regional variants (e.g., `en-gb`, `en-us`).
   - Supports specific full tags (e.g., `source-de-de:1`).
-- **Refined Sentence Search**: strict mode for sentence searches ensures results have content in `SentenceDestination` fields.
+- **Refined Sentence Search**: Strict mode for sentence searches ensures results have content in `SentenceDestination` fields.
+
+### Improvements
+- **Optimized Language Variants**: Removed base language codes from expansion lists to prevent Anki query parsing issues with overly broad wildcards.
+- **Python 3.9 Compatibility**: Updated type hints to use `typing.Optional` and `typing.List` for compatibility with Python 3.9+.
