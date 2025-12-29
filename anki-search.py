@@ -69,9 +69,17 @@ def search_word_in_decks(search_word: str, search_type: str, languages: list[str
     # while acting as an additional filter on top of the static condition.
     language_filter = ""
     if languages:
-        # Construct global terms for each language tag, e.g. (*source-en-* OR *source-ru-*)
-        # Using *source-{lang}-* ensures we match the tag format irrespective of which field it resides in.
-        lang_conditions = " OR ".join([f'*source-{lang}-*' for lang in languages])
+        # Construct global terms for each language tag.
+        # If the user provides a full tag (starts with "source-"), use it directly.
+        # Otherwise, assume it's a language code and wrap it in the standard tag format.
+        conditions = []
+        for lang in languages:
+            if lang.startswith("source-"):
+                conditions.append(f'*{lang}*')
+            else:
+                conditions.append(f'*source-{lang}-*')
+        
+        lang_conditions = " OR ".join(conditions)
         language_filter = f' ({lang_conditions})'
 
     # Construct the final query.
@@ -156,8 +164,8 @@ if __name__ == "__main__":
     search_group.add_argument("--query", help="Word to search for in any Anki deck (e.g., --query \"test\")")
     search_group.add_argument("--search-type", choices=['word', 'sentence'], default='word',
                         help="Type of search: 'word' for WordSource, 'sentence' for SentenceSource (default: word)")
-    search_group.add_argument("--languages", "--lang", nargs='+',
-                        help="List of languages to filter by (e.g., --languages en ru). Filters based on 'source-{lang}-' tag in WordDestination.")
+    search_group.add_argument("--languages", "--lang", nargs='*',
+                        help="List of languages to filter by (e.g., --languages en source-de-de:1). Filters based on 'source-{lang}-' tag or exact match if starting with 'source-'.")
     search_group.add_argument("--html", action="store_true", help="Output search results in HTML format.")
 
     browse_group = parser.add_argument_group('Browser arguments')
