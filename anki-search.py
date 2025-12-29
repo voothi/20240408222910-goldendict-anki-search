@@ -63,13 +63,25 @@ def search_word_in_decks(search_word: str, search_type: str, languages: list[str
     """
     anki_connect_url = "http://localhost:8765"
 
+    # Map of short language codes to common dialect specific field suffixes.
+    # This allows searching for "en" to find "en-gb", "en-us", etc.
+    LANGUAGE_VARIANTS = {
+        'en': ['en', 'en-gb', 'en-us', 'en-au', 'en-ca'],
+        'de': ['de', 'de-de', 'de-at', 'de-ch'],
+        'ru': ['ru', 'ru-ru'],
+        'fr': ['fr', 'fr-fr', 'fr-ca'],
+        'es': ['es', 'es-es', 'es-mx'],
+        'it': ['it', 'it-it']
+    }
+
     # Dynamic Condition: Language Filter (Optional)
     # If languages are specified, we add a filter to ensure the content contains the specific language tag.
     # We use a global search (no field prefix) or specific field patterns to satisfy the "not depend on field name" requirement
     # while acting as an additional filter on top of the static condition.
     # Construct the final query.
+    # Construct the final query.
     if search_type == "word":
-        # Dynamic Condition for Words: Global/Flexible language search (User preferred syntax)
+        # Dynamic Condition for Words: Global/Flexible language search
         language_filter = ""
         if languages:
             conditions = []
@@ -77,7 +89,11 @@ def search_word_in_decks(search_word: str, search_type: str, languages: list[str
                 if lang.startswith("source-"):
                     conditions.append(f'*{lang}*:_*')
                 else:
-                    conditions.append(f'*source-{lang}*:_*')
+                    # Expand short code to dialects if available
+                    langs_to_check = LANGUAGE_VARIANTS.get(lang, [lang])
+                    for variant in langs_to_check:
+                         conditions.append(f'*source-{variant}*:_*')
+            
             lang_conditions = " OR ".join(conditions)
             language_filter = f' ({lang_conditions})'
 
@@ -94,7 +110,11 @@ def search_word_in_decks(search_word: str, search_type: str, languages: list[str
                 if lang.startswith("source-"):
                     conditions.append(f'*{lang}*:_*')
                 else:
-                    conditions.append(f'*source-{lang}*:_*')
+                    # Expand short code to dialects if available
+                    langs_to_check = LANGUAGE_VARIANTS.get(lang, [lang])
+                    for variant in langs_to_check:
+                         conditions.append(f'*source-{variant}*:_*')
+
             lang_conditions = " OR ".join(conditions)
             language_filter = f' ({lang_conditions})'
 
