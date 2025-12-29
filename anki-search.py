@@ -94,9 +94,9 @@ def search_word_in_decks(search_word: str, search_type: str, languages: list[str
             for lang in languages:
                 # If full tag provided, assume it applies to SentenceDestination if it's a value search
                 if lang.startswith("source-"):
-                     conditions.append(f'SentenceDestination:*{lang}*')
+                     conditions.append(f'(SentenceDestination:*{lang}* OR SentenceDestination2:*{lang}*)')
                 else:
-                     conditions.append(f'SentenceDestination:*source-{lang}-*')
+                     conditions.append(f'(SentenceDestination:*source-{lang}-* OR SentenceDestination2:*source-{lang}-*)')
             lang_conditions = " OR ".join(conditions)
             language_filter = f' ({lang_conditions})'
 
