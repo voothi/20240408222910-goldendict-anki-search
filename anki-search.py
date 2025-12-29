@@ -19,6 +19,7 @@ import argparse
 import requests
 import re
 import pyperclip
+from typing import Optional, List
 
 def open_in_anki_browser(query: str):
     """
@@ -45,7 +46,7 @@ def open_in_anki_browser(query: str):
     except requests.exceptions.RequestException as e:
         print(f"Error sending command to AnkiConnect: {e}")
 
-def search_word_in_decks(search_word: str, search_type: str, languages: list[str] | None = None, html_output: bool = False) -> list[dict] | None:
+def search_word_in_decks(search_word: str, search_type: str, languages: Optional[List[str]] = None, html_output: bool = False) -> Optional[List[dict]]:
     """
     Searches for cards based on a word or sentence and returns their data.
 

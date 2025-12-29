@@ -2,30 +2,50 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug Anki Search — word",
-            "type": "python",
+            "name": "Debug Anki Search — Wroclaw (En)",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/anki-search.py",
             "args": [
-                "--query", "test",
-                "--search-type", "word"
+                "--query",
+                "ly Wroclaw is left, it turns",
+                "--search-type",
+                "sentence",
+                "--html",
+                "--languages",
+                "en"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Debug Anki Search — word",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/anki-search.py",
+            "args": [
+                "--query",
+                "test",
+                "--search-type",
+                "word"
             ], // Параметры передаются здесь
             "console": "integratedTerminal"
         },
         {
             "name": "Debug Anki Search — sentence",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/anki-search.py",
             "args": [
-                "--query", "heute wollen",
-                "--search-type", "sentence"
+                "--query",
+                "heute wollen",
+                "--search-type",
+                "sentence"
             ], // Параметры передаются здесь
             "console": "integratedTerminal"
         },
         {
             "name": "Debug Anki Search 1",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/anki-search.1.py",
             "args": [
@@ -35,7 +55,7 @@
         },
         {
             "name": "Debug Anki Search 2",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/anki-search.2.py",
             "args": [
