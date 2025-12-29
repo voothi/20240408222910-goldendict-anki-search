@@ -18,8 +18,42 @@ Install them with: pip install requests pyperclip
 import argparse
 import requests
 import re
+import sys
 import pyperclip
 from typing import Optional, List
+
+# AnkiConnect configuration
+ANKI_CONNECT_URL = 'http://localhost:8765'
+BATCH_SIZE = 100
+
+
+def make_ac_request(action, **params):
+    """Create AnkiConnect request payload."""
+    return {'action': action, 'params': params, 'version': 6}
+
+
+def parse_ac_response(response):
+    """Validate and extract result from AnkiConnect response."""
+    if response.get('error') is not None:
+        raise Exception(response['error'])
+    return response.get('result')
+
+
+def invoke_ac(action, **params):
+    """Execute single AnkiConnect action."""
+    payload = make_ac_request(action, **params)
+    try:
+        response = requests.post(ANKI_CONNECT_URL, json=payload).json()
+    except requests.exceptions.ConnectionError:
+        print('[E] Anki is not running or AnkiConnect is not installed', file=sys.stderr)
+        sys.exit(1)
+    return parse_ac_response(response)
+
+
+def invoke_multi_ac(actions):
+    """Execute multiple AnkiConnect actions in one HTTP call."""
+    results = invoke_ac('multi', actions=actions)
+    return [parse_ac_response(r) for r in results]
 
 def open_in_anki_browser(query: str):
     """
@@ -30,20 +64,10 @@ def open_in_anki_browser(query: str):
     Args:
         query (str): The search query string to execute in the Anki browser.
     """
-    anki_connect_url = "http://localhost:8765"
-    # Construct the JSON-RPC payload for the 'guiBrowse' action.
-    payload = {
-        "action": "guiBrowse",
-        "version": 6,
-        "params": {
-            "query": query
-        }
-    }
     try:
-        response = requests.post(anki_connect_url, json=payload)
-        response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx).
+        invoke_ac('guiBrowse', query=query)
         print(f"Successfully sent query to Anki Browser: {query}")
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
         print(f"Error sending command to AnkiConnect: {e}")
 
 def search_word_in_decks(search_word: str, search_type: str, languages: Optional[List[str]] = None, html_output: bool = False) -> Optional[List[dict]]:
@@ -124,38 +148,25 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
         raise ValueError("Invalid search_type. Must be 'word' or 'sentence'.")
 
     # Step 1: Find the IDs of cards matching the query.
-    payload = {
-        "action": "findCards",
-        "version": 6,
-        "params": { "query": query }
-    }
     try:
-        response = requests.post(anki_connect_url, json=payload)
-        response.raise_for_status()
-    except requests.exceptions.RequestException as e:
+        card_ids = invoke_ac('findCards', query=query)
+    except Exception as e:
         print(f"Error connecting to AnkiConnect: {e}")
         return None
 
-    card_ids = response.json().get("result")
     if not card_ids:
-        return None # No cards found.
+        return None  # No cards found.
 
     # Step 2: Retrieve detailed information for the found card IDs.
-    payload = {
-        "action": "cardsInfo",
-        "version": 6,
-        "params": { "cards": card_ids }
-    }
     try:
-        response = requests.post(anki_connect_url, json=payload)
-        response.raise_for_status()
-    except requests.exceptions.RequestException as e:
+        cards_result = invoke_ac('cardsInfo', cards=card_ids)
+    except Exception as e:
         print(f"Error retrieving card information: {e}")
         return None
 
     # Step 3: Parse and format the card data.
     card_data = []
-    for card in response.json().get("result", []):
+    for card in cards_result:
         fields = card.get("fields", {})
 
         def get_field_value(field_name: str) -> str:
