@@ -86,22 +86,20 @@ def search_word_in_decks(search_word: str, search_type: str, languages: list[str
         query = f'("WordSource:*{search_word}*" OR "WordSourceInflectedForm:*{search_word}*") {destination_check}{language_filter}'
 
     elif search_type == "sentence":
-        # Dynamic Condition for Sentences: Strict Check on SentenceDestination
-        # Prevents false positives where 'WordDestination' matches the language but 'SentenceDestination' does not.
+        # Dynamic Condition for Sentences: Same global/flexible language search as words
         language_filter = ""
         if languages:
             conditions = []
             for lang in languages:
-                # If full tag provided, assume it applies to SentenceDestination if it's a value search
                 if lang.startswith("source-"):
-                     conditions.append(f'(SentenceDestination:*{lang}* OR SentenceDestination2:*{lang}*)')
+                    conditions.append(f'*{lang}*')
                 else:
-                     conditions.append(f'(SentenceDestination:*source-{lang}-* OR SentenceDestination2:*source-{lang}-*)')
+                    conditions.append(f'*source-{lang}-*:_*')
             lang_conditions = " OR ".join(conditions)
             language_filter = f' ({lang_conditions})'
 
-        # Static Condition for Sentences: Strict check on SentenceDestination being present and WordSource being empty.
-        destination_check = 'SentenceDestination:_* WordSource:'
+        # Static Condition for Sentences: SentenceDestination OR SentenceDestination2 not empty, and WordSource empty.
+        destination_check = '(SentenceDestination:_* OR SentenceDestination2:_*) WordSource:'
         query = f'"SentenceSource:*{search_word}*" {destination_check}{language_filter}'
     else:
         raise ValueError("Invalid search_type. Must be 'word' or 'sentence'.")
