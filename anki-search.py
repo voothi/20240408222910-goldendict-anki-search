@@ -65,9 +65,17 @@ def search_word_in_decks(search_word: str, search_type: str, languages: list[str
 
     # Construct the language filter part of the query.
     if languages:
-        # Create an OR condition for each specified language, e.g., "WordDestination:*source-en-*" OR "WordDestination:*source-ru-*"
-        lang_conditions = " OR ".join([f'WordDestination:*source-{lang}-*' for lang in languages])
-        destination_filter = f'({lang_conditions})'
+        # The user wants to filter by language across ALL destination fields, not just WordDestination.
+        # We check provided languages against all potential destination fields.
+        dest_fields = ["WordDestination", "SentenceDestination", "SentenceDestination2", "WordSourceMorphologyAI"]
+        
+        conditions = []
+        for lang in languages:
+            for field in dest_fields:
+                conditions.append(f'{field}:*source-{lang}-*')
+        
+        # Combine all conditions with OR. e.g. (WordDestination:*source-en-* OR SentenceDestination:*source-en-* ...)
+        destination_filter = f'({" OR ".join(conditions)})'
     else:
         # Default behavior: Ensure at least one destination field is not empty.
         destination_filter = '(WordDestination:_* OR SentenceDestination:_* OR SentenceDestination2:_* OR WordSourceMorphologyAI:_*)'
