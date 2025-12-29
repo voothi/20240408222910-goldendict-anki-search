@@ -65,7 +65,7 @@ def search_word_in_decks(search_word: str, search_type: str, html_output: bool =
     # This query looks for the search term in specific source fields and ensures
     # that corresponding destination fields are not empty.
     if search_type == "word":
-        query = f'("WordSource:*{search_word}*" OR "WordSourceInflectedForm:*{search_word}*") (WordDestination:_* OR SentenceDestination:_* OR WordSourceMorphologyAI:_*)'
+        query = f'("WordSource:*{search_word}*" OR "WordSourceInflectedForm:*{search_word}*") (WordDestination:_* OR SentenceDestination:_* OR SentenceDestination2:_* OR WordSourceMorphologyAI:_*)'
     elif search_type == "sentence":
         query = f'"SentenceSource:*{search_word}*" SentenceDestination:_* WordSource:'
     else:
