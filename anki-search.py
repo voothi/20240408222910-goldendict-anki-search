@@ -73,7 +73,7 @@ def open_in_anki_browser(query: str):
     except Exception as e:
         print(f"Error sending command to AnkiConnect: {e}")
 
-def search_word_in_decks(search_word: str, search_type: str, languages: Optional[List[str]] = None, html_output: bool = False) -> Optional[List[dict]]:
+def search_word_in_decks(search_word: str, search_type: str, languages: Optional[List[str]] = None, html_output: bool = False, fast_mode: bool = False) -> Optional[List[dict]]:
     """
     Searches for cards based on a word or sentence and returns their data.
 
@@ -84,6 +84,8 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
                                       If None or empty, searches all languages.
         html_output (bool): If True, field values are returned with HTML tags.
                             If False, HTML tags are stripped.
+        fast_mode (bool): If True, only returns card IDs to speed up execution (1 request).
+                          If False, returns full card details (1 request using new API).
 
     Returns:
         A list of dictionaries, where each dictionary represents a card's data,
@@ -150,45 +152,49 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
     else:
         raise ValueError("Invalid search_type. Must be 'word' or 'sentence'.")
 
-    # Step 1: Find the IDs of cards matching the query.
+    # Step 1: Find the cards (and info if not fast)
     try:
-        card_ids = invoke_ac('findCards', query=query)
+        if fast_mode:
+            # Fast mode: Get IDs only (1 request)
+            card_ids = invoke_ac('findCards', query=query)
+            if not card_ids:
+                return None
+            return [{"id": cid} for cid in card_ids]
+        else:
+            # Default mode: Get Card Info directly (1 request with new API)
+            # If findCardsInfo is not available (old AnkiConnect), this might fail or we should fallback.
+            # Assuming the user accepts the requirement of the updated addon.
+            cards_result = invoke_ac('findCardsInfo', query=query)
+            if not cards_result:
+                return None
+            
+            # Step 2: Parse and format the card data.
+            card_data = []
+            for card in cards_result:
+                fields = card.get("fields", {})
+
+                def get_field_value(field_name: str) -> str:
+                    """Helper to safely extract field values and optionally strip HTML."""
+                    value = fields.get(field_name, {}).get("value", "")
+                    return value if html_output else _strip_html(value)
+
+                card_data.append({
+                    "WordSource": get_field_value("WordSource"),
+                    "WordSourceIPA": get_field_value("WordSourceIPA"),
+                    "WordDestination": get_field_value("WordDestination"),
+                    "SentenceSource": get_field_value("SentenceSource"),
+                    "WordSourceInflectedForm": get_field_value("WordSourceInflectedForm"),
+                    "SentenceDestination": get_field_value("SentenceDestination"),
+                    "SentenceDestination2": get_field_value("SentenceDestination2"),
+                    "WordSourceMorphologyAI": get_field_value("WordSourceMorphologyAI"),
+                    "DeckName": card.get("deckName", "")
+                })
+            return card_data
+
     except Exception as e:
-        print(f"Error connecting to AnkiConnect: {e}")
+        print(f"Error communicating with AnkiConnect: {e}")
         return None
 
-    if not card_ids:
-        return None  # No cards found.
-
-    # Step 2: Retrieve detailed information for the found card IDs.
-    try:
-        cards_result = invoke_ac('cardsInfo', cards=card_ids)
-    except Exception as e:
-        print(f"Error retrieving card information: {e}")
-        return None
-
-    # Step 3: Parse and format the card data.
-    card_data = []
-    for card in cards_result:
-        fields = card.get("fields", {})
-
-        def get_field_value(field_name: str) -> str:
-            """Helper to safely extract field values and optionally strip HTML."""
-            value = fields.get(field_name, {}).get("value", "")
-            return value if html_output else _strip_html(value)
-
-        card_data.append({
-            "WordSource": get_field_value("WordSource"),
-            "WordSourceIPA": get_field_value("WordSourceIPA"),
-            "WordDestination": get_field_value("WordDestination"),
-            "SentenceSource": get_field_value("SentenceSource"),
-            "WordSourceInflectedForm": get_field_value("WordSourceInflectedForm"),
-            "SentenceDestination": get_field_value("SentenceDestination"),
-            "SentenceDestination2": get_field_value("SentenceDestination2"),
-            "WordSourceMorphologyAI": get_field_value("WordSourceMorphologyAI"),
-            "DeckName": card.get("deckName", "")
-        })
-    return card_data
 
 def _strip_html(text: str) -> str:
     """A simple utility to remove HTML tags from a string."""
@@ -209,6 +215,7 @@ if __name__ == "__main__":
     search_group.add_argument("--languages", "--lang", nargs='*',
                         help="List of languages to filter by (e.g., --languages en source-de-de:1). Filters based on 'source-{lang}-' tag or exact match if starting with 'source-'.")
     search_group.add_argument("--html", action="store_true", help="Output search results in HTML format.")
+    search_group.add_argument("--fast", action="store_true", help="Fast mode: only check for existence (returns IDs), skipping detailed info.")
 
     browse_group = parser.add_argument_group('Browser arguments')
     browse_group.add_argument("--browse-query", help="A query to open directly in the Anki Browser (e.g., --browse-query \"deck:MyDeck\")")
@@ -229,50 +236,56 @@ if __name__ == "__main__":
         open_in_anki_browser(args.browse_query)
     # Priority 3: If a search query is given, perform the search and print results.
     elif args.query:
-        result = search_word_in_decks(args.query, args.search_type, languages=args.languages, html_output=args.html)
+        result = search_word_in_decks(args.query, args.search_type, languages=args.languages, html_output=args.html, fast_mode=args.fast)
         if result:
-            # Format and print the results based on whether HTML output is requested.
-            if args.html:
-                for i, card in enumerate(result):
-                    lines = []
-                    if card['WordSource']:
-                        line = f"{card['WordSource']}"
-                        if card['WordDestination']:
-                            line += f" - {card['WordDestination']}"
-                        lines.append(line)
-                    # Add other fields if they exist
-                    if card['WordSourceIPA']: lines.append(f"[{card['WordSourceIPA']}]")
-                    if card['WordSourceInflectedForm']: lines.append(f"{card['WordSourceInflectedForm']}")
-                    if card['SentenceSource']: lines.append(f"{card['SentenceSource']}")
-                    if card['SentenceDestination']: lines.append(f"- {card['SentenceDestination']}")
-                    if card['SentenceDestination2']: lines.append(f"- {card['SentenceDestination2']}")
-                    if card['WordSourceMorphologyAI']: lines.append(f"{card['WordSourceMorphologyAI']}")
-                    if card['DeckName']: lines.append(f"deck:{card['DeckName']}")
+            if args.fast:
+                 # Fast mode output: just IDs
+                 print(f"Found {len(result)} cards:")
+                 for card in result:
+                     print(f"ID: {card['id']}")
+            else:
+                # Format and print the results based on whether HTML output is requested.
+                if args.html:
+                    for i, card in enumerate(result):
+                        lines = []
+                        if card['WordSource']:
+                            line = f"{card['WordSource']}"
+                            if card['WordDestination']:
+                                line += f" - {card['WordDestination']}"
+                            lines.append(line)
+                        # Add other fields if they exist
+                        if card['WordSourceIPA']: lines.append(f"[{card['WordSourceIPA']}]")
+                        if card['WordSourceInflectedForm']: lines.append(f"{card['WordSourceInflectedForm']}")
+                        if card['SentenceSource']: lines.append(f"{card['SentenceSource']}")
+                        if card['SentenceDestination']: lines.append(f"- {card['SentenceDestination']}")
+                        if card['SentenceDestination2']: lines.append(f"- {card['SentenceDestination2']}")
+                        if card['WordSourceMorphologyAI']: lines.append(f"{card['WordSourceMorphologyAI']}")
+                        if card['DeckName']: lines.append(f"deck:{card['DeckName']}")
 
-                    print("<br>\n".join(lines))
+                        print("<br>\n".join(lines))
 
-                    # Add a separator between cards.
-                    if i < len(result) - 1:
-                        print("<br><br>")
-            else: # Plain text output
-                for i, card in enumerate(result):
-                    if card['WordSource']:
-                        print(f"{card['WordSource']}", end='')
-                        if card['WordDestination']:
-                            print(f" — {card['WordDestination']}")
-                        else:
-                            print("")
-                    if card['WordSourceIPA']: print(f"[{card['WordSourceIPA']}]")
-                    if card['WordSourceInflectedForm']: print(f"{card['WordSourceInflectedForm']}")
-                    if card['SentenceSource']: print(f"{card['SentenceSource']}")
-                    if card['SentenceDestination']: print(f"- {card['SentenceDestination']}")
-                    if card['SentenceDestination2']: print(f"- {card['SentenceDestination2']}")
-                    if card['WordSourceMorphologyAI']: print(f"{card['WordSourceMorphologyAI']}")
-                    if card['DeckName']: print(f"deck:{card['DeckName']}")
-                    
-                    # Add a separator between cards.
-                    if i != len(result) - 1:
-                        print("\t")
+                        # Add a separator between cards.
+                        if i < len(result) - 1:
+                            print("<br><br>")
+                else: # Plain text output
+                    for i, card in enumerate(result):
+                        if card['WordSource']:
+                            print(f"{card['WordSource']}", end='')
+                            if card['WordDestination']:
+                                print(f" — {card['WordDestination']}")
+                            else:
+                                print("")
+                        if card['WordSourceIPA']: print(f"[{card['WordSourceIPA']}]")
+                        if card['WordSourceInflectedForm']: print(f"{card['WordSourceInflectedForm']}")
+                        if card['SentenceSource']: print(f"{card['SentenceSource']}")
+                        if card['SentenceDestination']: print(f"- {card['SentenceDestination']}")
+                        if card['SentenceDestination2']: print(f"- {card['SentenceDestination2']}")
+                        if card['WordSourceMorphologyAI']: print(f"{card['WordSourceMorphologyAI']}")
+                        if card['DeckName']: print(f"deck:{card['DeckName']}")
+                        
+                        # Add a separator between cards.
+                        if i != len(result) - 1:
+                            print("\t")
     # If no valid arguments are provided, show the help message.
     else:
         parser.print_help()
