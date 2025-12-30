@@ -73,7 +73,7 @@ def open_in_anki_browser(query: str):
     except Exception as e:
         print(f"Error sending command to AnkiConnect: {e}")
 
-def search_word_in_decks(search_word: str, search_type: str, languages: Optional[List[str]] = None, html_output: bool = False, fast_mode: bool = False) -> Optional[List[dict]]:
+def search_word_in_decks(search_word: str, search_type: str, languages: Optional[List[str]] = None, html_output: bool = False, only_ids: bool = False, optimized: bool = False) -> Optional[List[dict]]:
     """
     Searches for cards based on a word or sentence and returns their data.
 
@@ -84,8 +84,9 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
                                       If None or empty, searches all languages.
         html_output (bool): If True, field values are returned with HTML tags.
                             If False, HTML tags are stripped.
-        fast_mode (bool): If True, only returns card IDs to speed up execution (1 request).
-                          If False, returns full card details (1 request using new API).
+        only_ids (bool): If True, only returns card IDs to speed up execution (1 request).
+        optimized (bool): If True, uses the custom 'findCardsInfo' API (1 request, full data).
+                          If False (default), uses standard 'findCards' + 'cardsInfo' (2 requests).
 
     Returns:
         A list of dictionaries, where each dictionary represents a card's data,
@@ -154,42 +155,48 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
 
     # Step 1: Find the cards (and info if not fast)
     try:
-        if fast_mode:
+        if only_ids:
             # Fast mode: Get IDs only (1 request)
             card_ids = invoke_ac('findCards', query=query)
             if not card_ids:
                 return None
             return [{"id": cid} for cid in card_ids]
-        else:
-            # Default mode: Get Card Info directly (1 request with new API)
-            # If findCardsInfo is not available (old AnkiConnect), this might fail or we should fallback.
-            # Assuming the user accepts the requirement of the updated addon.
+        elif optimized:
+             # Optimized mode: Get Card Info directly (1 request with new API)
             cards_result = invoke_ac('findCardsInfo', query=query)
             if not cards_result:
                 return None
+        else:
+             # Default mode: Standard compatibility (2 requests)
+            card_ids = invoke_ac('findCards', query=query)
+            if not card_ids:
+                return None  # No cards found.
+
+            # Step 2: Retrieve detailed information
+            cards_result = invoke_ac('cardsInfo', cards=card_ids)
             
-            # Step 2: Parse and format the card data.
-            card_data = []
-            for card in cards_result:
-                fields = card.get("fields", {})
+        # Parse and format the card data (shared for default and optimized modes)
+        card_data = []
+        for card in cards_result:
+            fields = card.get("fields", {})
 
-                def get_field_value(field_name: str) -> str:
-                    """Helper to safely extract field values and optionally strip HTML."""
-                    value = fields.get(field_name, {}).get("value", "")
-                    return value if html_output else _strip_html(value)
+            def get_field_value(field_name: str) -> str:
+                """Helper to safely extract field values and optionally strip HTML."""
+                value = fields.get(field_name, {}).get("value", "")
+                return value if html_output else _strip_html(value)
 
-                card_data.append({
-                    "WordSource": get_field_value("WordSource"),
-                    "WordSourceIPA": get_field_value("WordSourceIPA"),
-                    "WordDestination": get_field_value("WordDestination"),
-                    "SentenceSource": get_field_value("SentenceSource"),
-                    "WordSourceInflectedForm": get_field_value("WordSourceInflectedForm"),
-                    "SentenceDestination": get_field_value("SentenceDestination"),
-                    "SentenceDestination2": get_field_value("SentenceDestination2"),
-                    "WordSourceMorphologyAI": get_field_value("WordSourceMorphologyAI"),
-                    "DeckName": card.get("deckName", "")
-                })
-            return card_data
+            card_data.append({
+                "WordSource": get_field_value("WordSource"),
+                "WordSourceIPA": get_field_value("WordSourceIPA"),
+                "WordDestination": get_field_value("WordDestination"),
+                "SentenceSource": get_field_value("SentenceSource"),
+                "WordSourceInflectedForm": get_field_value("WordSourceInflectedForm"),
+                "SentenceDestination": get_field_value("SentenceDestination"),
+                "SentenceDestination2": get_field_value("SentenceDestination2"),
+                "WordSourceMorphologyAI": get_field_value("WordSourceMorphologyAI"),
+                "DeckName": card.get("deckName", "")
+            })
+        return card_data
 
     except Exception as e:
         print(f"Error communicating with AnkiConnect: {e}")
@@ -215,7 +222,8 @@ if __name__ == "__main__":
     search_group.add_argument("--languages", "--lang", nargs='*',
                         help="List of languages to filter by (e.g., --languages en source-de-de:1). Filters based on 'source-{lang}-' tag or exact match if starting with 'source-'.")
     search_group.add_argument("--html", action="store_true", help="Output search results in HTML format.")
-    search_group.add_argument("--fast", action="store_true", help="Fast mode: only check for existence (returns IDs), skipping detailed info.")
+    search_group.add_argument("--only-ids", action="store_true", help="Fast mode: only check for existence (returns IDs), skipping detailed info.")
+    search_group.add_argument("--optimized", action="store_true", help="Use the optimized 'findCardsInfo' API (requires kardenwort-ankiconnect).")
 
     browse_group = parser.add_argument_group('Browser arguments')
     browse_group.add_argument("--browse-query", help="A query to open directly in the Anki Browser (e.g., --browse-query \"deck:MyDeck\")")
@@ -236,9 +244,9 @@ if __name__ == "__main__":
         open_in_anki_browser(args.browse_query)
     # Priority 3: If a search query is given, perform the search and print results.
     elif args.query:
-        result = search_word_in_decks(args.query, args.search_type, languages=args.languages, html_output=args.html, fast_mode=args.fast)
+        result = search_word_in_decks(args.query, args.search_type, languages=args.languages, html_output=args.html, only_ids=args.only_ids, optimized=args.optimized)
         if result:
-            if args.fast:
+            if args.only_ids:
                  # Fast mode output: just IDs
                  print(f"Found {len(result)} cards:")
                  for card in result:
