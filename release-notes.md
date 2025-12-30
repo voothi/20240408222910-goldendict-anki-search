@@ -1,5 +1,19 @@
 # Release Notes
 
+## v1.48.2 (2025-12-30)
+
+### New Features
+- **Only-IDs Mode**: Added `--only-ids` flag to retrieve only card IDs, skipping detailed data retrieval for maximum performance (1 request).
+- **Optimized Single-Request Mode**: Added `--optimized` flag to leverage custom `findCardsInfo` API from `kardenwort-ankiconnect`, combining search and data retrieval into a single server-side operation.
+
+### Improvements
+- **Standard Compatibility**: Restored default lookup to use the standard 2-request method (`findCards` -> `cardsInfo`) for full compatibility with all AnkiConnect versions while maintaining TCP session reuse.
+- **Search Logic Refactoring**: Unified formatting logic for default and optimized search paths.
+
+[Return to Top](#release-notes)
+
+---
+
 ## v1.46.12 (2025-12-29)
 
 ### Improvements
