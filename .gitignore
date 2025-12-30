@@ -90,3 +90,5 @@ build
 
 *.spec
 dist/
+
+references/
