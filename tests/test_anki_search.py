@@ -323,6 +323,28 @@ class TestAnkiSearch(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]['CardId'], 100)
 
+    @patch('anki_search.invoke_ac')
+    def test_search_with_deck_filter(self, mock_invoke):
+        # Set the DECK_FILTER global
+        anki_search.DECK_FILTER = "MyUniqueDeckID"
+        
+        # Test Word Search
+        anki_search.search_word_in_decks("testword", "word", only_ids=True)
+        # Verify call arguments
+        # We need to capture the call and check if 'deck:"*MyUniqueDeckID*"' is in the query string
+        args, kwargs = mock_invoke.call_args
+        query_arg = kwargs.get('query')
+        self.assertIn('deck:"*MyUniqueDeckID*"', query_arg)
+
+        # Test Sentence Search
+        anki_search.search_word_in_decks("test sentence", "sentence", only_ids=True)
+        args, kwargs = mock_invoke.call_args
+        query_arg = kwargs.get('query')
+        self.assertIn('deck:"*MyUniqueDeckID*"', query_arg)
+        
+        # Reset global
+        anki_search.DECK_FILTER = ""
+
 if __name__ == '__main__':
 
     unittest.main()

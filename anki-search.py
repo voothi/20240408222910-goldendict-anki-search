@@ -45,6 +45,7 @@ CONFIG = load_config()
 SEPARATOR_CHARS = [c.strip() for c in CONFIG.get('Search', 'separator_chars', fallback=DEFAULT_SEPARATOR_CHARS).split()]
 ANCHOR_LENGTH = CONFIG.getint('Search', 'anchor_length', fallback=DEFAULT_ANCHOR_LENGTH)
 VERIFY_CONTENT = CONFIG.getboolean('Search', 'verify_content', fallback=True)
+DECK_FILTER = CONFIG.get('Search', 'deck_filter', fallback='').strip()
 
 # Global debug flag
 
@@ -158,7 +159,13 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
 
         # Static Condition for Words: Ensure at least one of the many destination fields is not empty.
         destination_check = '(WordDestination:_* OR SentenceDestination:_* OR SentenceDestination2:_* OR WordSourceMorphologyAI:_*)'
-        query = f'("WordSource:*{search_word}*" OR "WordSourceInflectedForm:*{search_word}*") {destination_check}{language_filter}'
+        
+        # Apply Deck Filter if configured
+        deck_query_part = ""
+        if DECK_FILTER:
+            deck_query_part = f' AND deck:"*{DECK_FILTER}*"'
+
+        query = f'("WordSource:*{search_word}*" OR "WordSourceInflectedForm:*{search_word}*") {destination_check}{language_filter}{deck_query_part}'
 
     elif search_type == "sentence":
         # Dynamic Condition for Sentences: Same global/flexible language search as words
@@ -179,7 +186,13 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
 
         # Static Condition for Sentences: SentenceDestination OR SentenceDestination2 not empty, and WordSource empty.
         destination_check = '(SentenceDestination:_* OR SentenceDestination2:_*) WordSource:'
-        query = f'"SentenceSource:*{search_word}*" {destination_check}{language_filter}'
+
+        # Apply Deck Filter if configured
+        deck_query_part = ""
+        if DECK_FILTER:
+            deck_query_part = f' AND deck:"*{DECK_FILTER}*"'
+
+        query = f'"SentenceSource:*{search_word}*" {destination_check}{language_filter}{deck_query_part}'
     else:
         raise ValueError("Invalid search_type. Must be 'word' or 'sentence'.")
 
