@@ -8,6 +8,7 @@ This script provides two main functionalities for interacting with your Anki col
 
 -   **Advanced Card Search**: Perform complex searches for cards and print the results directly to your console in either plain text or HTML format.
 -   **Paragraph/Range Reading**: Automatically detects and retrieves full paragraphs spanning multiple sequential Anki cards in a **single operation**, eliminating the need for sentence-by-sentence lookups.
+-   **Deck Filtering**: Limit search results to a specific deck or hierarchy (e.g., a specific book or chapter) using `config.ini`. This ensures results are relevant to your current study material and prevents checking the entire database.
 -   **Direct Browser Integration**: Instantly open the Anki Card Browser with a specific search query, either provided as an argument or taken directly from your system clipboard.
 
 
