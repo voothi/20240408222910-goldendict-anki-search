@@ -362,31 +362,57 @@ def is_valid_deck(deck_name: str) -> bool:
     return leaf_name.startswith('0')
 
 
+def get_parent_deck(deck_name: str) -> Optional[str]:
+    """
+    Returns the parent deck name or None if root.
+    Ex: 'Parent::Child' -> 'Parent'
+    Ex: 'Root' -> None (or we could handle it, but for our logic None implies no common parent scope other than root)
+    """
+    if '::' not in deck_name:
+        return None
+    return '::'.join(deck_name.split('::')[:-1])
+
+
 def search_range_in_deck(start_card: dict, end_card: dict, original_query: str, html_output: bool = False) -> List[dict]:
     """
     Retrieves all cards in the specific deck between start_card and end_card (inclusive).
+    Supports sibling decks: query will be scoped to the Common Parent Deck.
     
     Verifies that the concatenated text of the retrieved cards matches the original_query.
     """
-    deck_name = start_card['DeckName']
+    start_deck = start_card['DeckName']
+    end_deck = end_card['DeckName']
     
-    # Validation: Same deck?
-    if deck_name != end_card['DeckName']:
-        return []
+    search_scope_deck = None
+    
+    if start_deck == end_deck:
+        search_scope_deck = start_deck
+    else:
+        # Check if they are siblings (same parent)
+        start_parent = get_parent_deck(start_deck)
+        end_parent = get_parent_deck(end_deck)
         
-    # Validation: Deck starts with '0'? (User constraint)
-    if not is_valid_deck(deck_name):
+        if start_parent and end_parent and start_parent == end_parent:
+             search_scope_deck = start_parent
+        else:
+             # Not siblings or same deck
+             return []
+
+    # Validation: LEAF Decks start with '0'? (User constraint)
+    # Both start and end LEAF decks must be valid '0-...' decks.
+    if not is_valid_deck(start_deck) or not is_valid_deck(end_deck):
          return []
 
     min_id = min(start_card['CardId'], end_card['CardId'])
-
     max_id = max(start_card['CardId'], end_card['CardId'])
 
-    query = f'deck:"{deck_name}"'
+    debug_print(f"Search Scope Deck: '{search_scope_deck}'")
+    query = f'deck:"{search_scope_deck}"'
     all_ids = invoke_ac('findCards', query=query)
     
     if not all_ids:
         return []
+
     
     # Filter IDs in range
     range_ids = [cid for cid in all_ids if min_id <= cid <= max_id]
@@ -414,9 +440,7 @@ def search_range_in_deck(start_card: dict, end_card: dict, original_query: str, 
         # Preference: SentenceSource -> WordSource
         # User note: "phrase cards, that is, those whose WordSource is empty and SentenceSource is not"
         # But we should probably look at both to be safe or strictly follow the user's description.
-        # Let's concatenate SentenceSource. If empty, maybe WordSource?
-        # Actually, if it's a mix, we might need both.
-        # Safe bet: Concatenate Sentences.
+        # Let's concatenate Sentences.
         s_source = get_field_value("SentenceSource")
         w_source = get_field_value("WordSource")
         
@@ -545,11 +569,19 @@ if __name__ == "__main__":
                              continue
                              
                          for e_card in end_candidates:
-                             if s_card['DeckName'] != e_card['DeckName']:
-                                 debug_print(f"Skipping End Candidate (Deck mismatch): StartDeck='{s_card['DeckName']}', EndDeck='{e_card['DeckName']}'")
-                                 continue
-                                 
-                             if s_card['CardId'] > e_card['CardId']:
+                              # Logic update: Allow same deck OR sibling decks (same parent)
+                              is_sibling = False
+                              if s_card['DeckName'] != e_card['DeckName']:
+                                  # Check if siblings
+                                  s_parent = get_parent_deck(s_card['DeckName'])
+                                  e_parent = get_parent_deck(e_card['DeckName'])
+                                  if s_parent and e_parent and s_parent == e_parent:
+                                      is_sibling = True
+                                  else:
+                                      # debug_print(f"Skipping End Candidate (Deck mismatch/Not siblings): StartDeck='{s_card['DeckName']}', EndDeck='{e_card['DeckName']}'")
+                                      continue
+                                  
+                              if s_card['CardId'] > e_card['CardId']:
                                  debug_print(f"Skipping End Candidate (ID Order): StartID={s_card['CardId']}, EndID={e_card['CardId']}")
                                  continue
 

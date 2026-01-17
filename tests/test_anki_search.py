@@ -67,14 +67,6 @@ class TestAnkiSearch(unittest.TestCase):
         self.assertEqual(start, "Start sentence here")
         
         # End: "End sentence here" (Scanning backwards: "here." (stripped->here) -> "sentence" -> "End" -> "here." (stop))
-        # Wait, backward scan:
-        # words = ["Start", "sentence", "here.", "End", "sentence", "here."]
-        # reversed = ["here.", "sentence", "End", "here.", "sentence", "Start"]
-        # 1. "here." -> has dot. Strip -> "here". Append. STOP.
-        # So End anchor should be just "here".
-        # Let's verify logic:
-        # "if clean_w: end_anchor_words.append(clean_w); break"
-        # Yes.
         self.assertEqual(end, "here")
 
     @patch('anki_search.invoke_ac')
@@ -147,14 +139,8 @@ class TestAnkiSearch(unittest.TestCase):
         # Normalized Card: "startsegmentend" (Entity removed/ignored, Hyphen removed, Punctuation removed, Spaces removed)
         # Normalized Query: "startsegmentend" (Spaces, Punctuation removed)
         
-        # "Start&nbsp;Se-gment" -> "StartSe-gment" -> "StartSegment" -> "startsegment"
-        # "End." -> "End" -> "end"
-        
-        # Query: "Start Segment End." -> "StartSegmentEnd" -> "startsegmentend"
-        
         original_query = "Start Segment End."
 
-        
         results = anki_search.search_range_in_deck(start_card, end_card, original_query)
         self.assertEqual(len(results), 2)
 
@@ -198,12 +184,38 @@ class TestAnkiSearch(unittest.TestCase):
         self.assertFalse(anki_search.is_valid_deck("Deck"))
         self.assertFalse(anki_search.is_valid_deck("01-Parent::Child")) # Leaf is Child
 
+    def test_get_parent_deck(self):
+        self.assertEqual(anki_search.get_parent_deck("Parent::Child"), "Parent")
+        self.assertEqual(anki_search.get_parent_deck("A::B::C"), "A::B")
+        self.assertIsNone(anki_search.get_parent_deck("Root"))
 
-    def test_search_range_different_decks(self):
+    @patch('anki_search.invoke_ac')
+    def test_search_range_sibling_decks(self, mock_invoke):
+        # Sibling decks: Same parent, different leaf
+        start_card = {'DeckName': 'Parent::01-Start', 'CardId': 100}
+        end_card = {'DeckName': 'Parent::02-End', 'CardId': 200}
+        
+        mock_invoke.side_effect = [
+            [100, 150, 200], # findCards returns IDs from PARENT scope (Parent::*)
+            [
+                {'cardId': 100, 'fields': {'SentenceSource': {'value': 'Start'}}},
+                {'cardId': 150, 'fields': {'SentenceSource': {'value': 'Middle'}}},
+                {'cardId': 200, 'fields': {'SentenceSource': {'value': 'End'}}}
+            ]
+        ]
+        
+        results = anki_search.search_range_in_deck(start_card, end_card, "start middle end")
+        self.assertEqual(len(results), 3)
+        # Verify query used PARENT deck
+        mock_invoke.assert_any_call('findCards', query='deck:"Parent"')
+
+    def test_search_range_different_non_sibling_decks(self):
+        # Different trees
         start_card = {'DeckName': '01-DeckA', 'CardId': 100}
         end_card = {'DeckName': '01-DeckB', 'CardId': 200}
         results = anki_search.search_range_in_deck(start_card, end_card, "query")
         self.assertEqual(results, [])
+
 
     @patch('anki_search.invoke_ac')
     def test_real_monitor_theory_example(self, mock_invoke):
@@ -242,9 +254,5 @@ class TestAnkiSearch(unittest.TestCase):
         self.assertEqual(results[0]['SentenceSource'], 'This book is concerned with what has been called the "Monitor Theory" of adult second language acquisition.')
         self.assertEqual(results[4]['SentenceSource'], 'subconscious acquisition appears to be far more important.')
         
-        # Verify text normalization worked (query has newlines/spaces that might differ slightly, but verify logic normalizes them)
-
-
-
 if __name__ == '__main__':
     unittest.main()
