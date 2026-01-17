@@ -10,6 +10,8 @@
 - **Configuration Support**: Added `config.ini` for customizable settings:
   - `anchor_length`: Number of words used for boundary detection (default: 4).
   - `separator_chars`: List of punctuation marks that define anchor boundaries.
+  - `verify_content`: Toggle strict identity check (useful for AI-processed text).
+
 - **Improved Arguments**:
   - `--debug`: Prints detailed execution trace to `stderr`.
   - `--query-file`: Allows reading long queries from a UTF-8 file to avoid shell character limits.
