@@ -45,9 +45,17 @@ CONFIG = load_config()
 SEPARATOR_CHARS = [c.strip() for c in CONFIG.get('Search', 'separator_chars', fallback=DEFAULT_SEPARATOR_CHARS).split()]
 ANCHOR_LENGTH = CONFIG.getint('Search', 'anchor_length', fallback=DEFAULT_ANCHOR_LENGTH)
 
+# Global debug flag
+DEBUG = False
+
+def debug_print(*args, **kwargs):
+    """Print to stderr if DEBUG is enabled."""
+    if DEBUG:
+        print("[DEBUG]", *args, file=sys.stderr, **kwargs)
 
 # Reuse TCP connection for faster sequential requests
 _session = requests.Session()
+
 
 
 def make_ac_request(action, **params):
@@ -329,10 +337,12 @@ def normalize_text(text: str) -> str:
     # 3. Remove hyphens (handles word breaks: "Mon-itor" -> "Monitor")
     text = text.replace('-', '')
     
-    # 4. Remove all whitespace characters
-    text = "".join(text.split())
+    # 4. Remove all non-alphanumeric characters (includes punctuation, spaces, quotes)
+    # equivalent to keeping only [a-z0-9_]
+    text = re.sub(r'[^\w]', '', text)
     
     return text.lower()
+
 
 
 
@@ -422,9 +432,13 @@ def search_range_in_deck(start_card: dict, end_card: dict, original_query: str, 
     
     if norm_query != norm_reconstructed:
         # Debug info could be useful, but for now just fail silently as per "output only if these texts match"
+        debug_print("Verification failed.")
+        debug_print(f"Query (norm): '{norm_query}'")
+        debug_print(f"Found (norm): '{norm_reconstructed}'")
         return []
 
     return card_data
+
 
 
 # --- Main execution block ---
@@ -442,14 +456,20 @@ if __name__ == "__main__":
     search_group.add_argument("--html", action="store_true", help="Output search results in HTML format.")
     search_group.add_argument("--only-ids", action="store_true", help="Fast mode: only check for existence (returns IDs), skipping detailed info.")
     search_group.add_argument("--optimized", action="store_true", help="Use the optimized 'findCardsInfo' API (requires kardenwort-ankiconnect).")
+    search_group.add_argument("--debug", action="store_true", help="Enable debug output to stderr.")
 
     browse_group = parser.add_argument_group('Browser arguments')
+
     browse_group.add_argument("--browse-query", help="A query to open directly in the Anki Browser (e.g., --browse-query \"deck:MyDeck\")")
     browse_group.add_argument("--browse-clipboard", action="store_true", help="Use the content of the clipboard as the query to open in the Anki Browser.")
 
     args = parser.parse_args()
+    
+    if args.debug:
+        DEBUG = True
 
     # Determine which action to take based on the provided arguments.
+
     # Priority 1: If --browse-clipboard is used, search with clipboard content.
     if args.browse_clipboard:
         clipboard_content = pyperclip.paste()
@@ -469,13 +489,16 @@ if __name__ == "__main__":
         # Heuristic: If query has more words than ANCHOR_LENGTH, it might be a multi-sentence/phrase segment.
         if len(query_text.split()) > ANCHOR_LENGTH:
              start_str, end_str = extract_anchors(query_text)
+             debug_print(f"Anchors extracted: Start='{start_str}', End='{end_str}'")
              
              if start_str and end_str and start_str != end_str:
                  # Search for Start Cards
                  start_candidates = search_word_in_decks(start_str, args.search_type, languages=args.languages, optimized=args.optimized)
+                 debug_print(f"Start candidates found: {len(start_candidates) if start_candidates else 0}")
                  
                  # Search for End Cards
                  end_candidates = search_word_in_decks(end_str, args.search_type, languages=args.languages, optimized=args.optimized)
+                 debug_print(f"End candidates found: {len(end_candidates) if end_candidates else 0}")
                  
                  if start_candidates and end_candidates:
                      # Find a matching pair in the same deck (starting with 0)
@@ -490,15 +513,19 @@ if __name__ == "__main__":
                          for e_card in end_candidates:
                              if s_card['DeckName'] == e_card['DeckName'] and s_card['CardId'] <= e_card['CardId']:
                                  # Found a valid range!
+                                 debug_print(f"Checking candidate range: Deck='{s_card['DeckName']}', StartID={s_card['CardId']}, EndID={e_card['CardId']}")
                                  range_result = search_range_in_deck(s_card, e_card, query_text, html_output=args.html)
                                  if range_result:
+                                     debug_print("Range verified and accepted.")
                                      result = range_result
                                      found_range = True
                                      break
-
+                     if not found_range:
+                         debug_print("No valid verified range found among candidates.")
         
         # --- Fallback to Standard Search ---
         if not result:
+             debug_print("Falling back to standard search.")
              result = search_word_in_decks(query_text, args.search_type, languages=args.languages, html_output=args.html, only_ids=args.only_ids, optimized=args.optimized)
 
         if result:

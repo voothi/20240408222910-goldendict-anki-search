@@ -144,15 +144,16 @@ class TestAnkiSearch(unittest.TestCase):
         ]
         
         # Original query: "Start Segment End."
-        # Normalized Card: "startsegmentend." (Entity removed/ignored, Hyphen removed, Spaces removed)
-        # Normalized Query: "startsegmentend." (Spaces removed)
+        # Normalized Card: "startsegmentend" (Entity removed/ignored, Hyphen removed, Punctuation removed, Spaces removed)
+        # Normalized Query: "startsegmentend" (Spaces, Punctuation removed)
         
-        # "Start&nbsp;Se-gment" -> Remove entities -> "StartSe-gment" -> Remove hyphens -> "StartSegment" -> Lower -> "startsegment"
-        # "End." -> "end."
+        # "Start&nbsp;Se-gment" -> "StartSe-gment" -> "StartSegment" -> "startsegment"
+        # "End." -> "End" -> "end"
         
-        # Query: "Start Segment End." -> "startsegmentend."
+        # Query: "Start Segment End." -> "StartSegmentEnd" -> "startsegmentend"
         
         original_query = "Start Segment End."
+
         
         results = anki_search.search_range_in_deck(start_card, end_card, original_query)
         self.assertEqual(len(results), 2)
