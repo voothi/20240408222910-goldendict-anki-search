@@ -263,6 +263,47 @@ class TestAnkiSearch(unittest.TestCase):
         
         card3 = {'WordSource': 'Just Word'}
         self.assertEqual(anki_search.reconstruct_card_text(card3), "Just Word")
+
+    @patch('anki_search.invoke_ac')
+    def test_edge_case_truncated_end(self, mock_invoke):
+        # Case 2: "... interrelated in a definite" (missing "way:")
+        # Should probably find the range, but currently fails.
+        full_text = '... interrelated in a definite way:'
+        truncated_query = '... interrelated in a definite'
         
+        start_card = {'DeckName': '01-RealDeck', 'CardId': 1000}
+        end_card = {'DeckName': '01-RealDeck', 'CardId': 1004} # The actual end card
+        
+        # Mocking finding cards.
+        # Implication: "definite" is the end anchor. 
+        # Search for "definite". Does Card 1003 ("...in a definite way:") match " *definite* "? Yes.
+        
+        mock_invoke.side_effect = [
+            [1003], # findCards for START anchor (just assume it finds something or we skip if logic allows)
+            # Actually, let's setup full flow:
+            [1000],  # Start candidates ("Monitor") -> finds card 1000
+            [1003],  # End candidates ("definite") -> finds card 1003 ("...definite way:")
+            
+            [1000, 1001, 1002, 1003], # findCards Range (Scope)
+            
+            # cardsInfo
+            [
+                {'cardId': 1000, 'fields': {'SentenceSource': {'value': 'Start card text...'}}},
+                {'cardId': 1003, 'fields': {'SentenceSource': {'value': '... interrelated in a definite way:'}}}
+            ]
+        ]
+        
+        # NOTE: This test might FAIL depending on verification logic.
+        # Normalized Query: "interrelatedinadefinite"
+        # Reconstructed Text: "...interrelatedinadefiniteway"
+        # They do NOT match! This explains why it returns nothing. verification is too strict.
+        
+        # We define the test to reproduce the behavior (assert Empty) OR define what we WANT (assert Found).
+        # User implies it "doesn't output anything" is a PROBLEM. So we want it to find something.
+        
+        # For this specific test, let's just scaffolding it to RUN logic.
+        # I'll assert Empty for now to confirm regression, then we fix logic.
+        pass
+
 if __name__ == '__main__':
     unittest.main()

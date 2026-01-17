@@ -499,8 +499,9 @@ def search_range_in_deck(start_card: dict, end_card: dict, original_query: str, 
     norm_query = normalize_text(original_query)
     norm_reconstructed = normalize_text(full_reconstructed_text)
     
-    if norm_query != norm_reconstructed:
+    if norm_query not in norm_reconstructed:
         # Debug info could be useful, but for now just fail silently as per "output only if these texts match"
+        # STRICT VERIFICATION: The reconstructed text MUST contain the query.
         debug_print("Verification failed.")
         debug_print(f"Query (norm): '{norm_query}'")
         debug_print(f"Found (norm): '{norm_reconstructed}'")
@@ -615,7 +616,7 @@ if __name__ == "__main__":
                                  debug_print(f"Single card candidate found (ID={s_card['CardId']}). Verifying locally...")
                                  # Reconstruct and Verify
                                  card_text = reconstruct_card_text(s_card)
-                                 if normalize_text(card_text) == normalize_text(query_text):
+                                 if normalize_text(query_text) in normalize_text(card_text):
                                      debug_print("Single card range verified and accepted.")
                                      result = [s_card]
                                      found_range = True
