@@ -1,4 +1,11 @@
 
+## v1.52.4 (2026-01-18)
+
+### Improvements
+-   **Field Reordering**: Swapped the display order of `IPA` and `WordSource` in search results. `IPA` is now displayed first.
+-   **Lemma Comparison**: This change aligns with [Kardenwort Anki Templates](https://github.com/voothi/20241106211123-kardenwort-anki-templates) to facilitate side-by-side comparison of the lemma and the original word.
+-   **Standardized Separator**: Changed the separator in plain text output from an em-dash (`—`) to a hyphen (`-`) for consistency.
+
 ## v1.52.2 (2026-01-17)
 
 ### New Features
