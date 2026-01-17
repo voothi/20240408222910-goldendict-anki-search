@@ -7,8 +7,9 @@ A command-line utility to interact with Anki via the AnkiConnect add-on.
 This script provides two main functionalities for interacting with your Anki collection from the command line:
 
 -   **Advanced Card Search**: Perform complex searches for cards and print the results directly to your console in either plain text or HTML format.
--   **Paragraph/Range Reading**: Automatically detects and retrieves full paragraphs spanning multiple sequential Anki cards in a **single request**, eliminating the need for sentence-by-sentence lookups.
+-   **Paragraph/Range Reading**: Automatically detects and retrieves full paragraphs spanning multiple sequential Anki cards in a **single operation**, eliminating the need for sentence-by-sentence lookups.
 -   **Direct Browser Integration**: Instantly open the Anki Card Browser with a specific search query, either provided as an argument or taken directly from your system clipboard.
+
 
 -   **GoldenDict Integration**: Designed to work seamlessly with GoldenDict via an [accompanying AutoHotkey script](https://github.com/voothi/20240411110510-autohotkey), allowing you to look up selected words in Anki with a single hotkey.
 
