@@ -44,8 +44,10 @@ def load_config():
 CONFIG = load_config()
 SEPARATOR_CHARS = [c.strip() for c in CONFIG.get('Search', 'separator_chars', fallback=DEFAULT_SEPARATOR_CHARS).split()]
 ANCHOR_LENGTH = CONFIG.getint('Search', 'anchor_length', fallback=DEFAULT_ANCHOR_LENGTH)
+VERIFY_CONTENT = CONFIG.getboolean('Search', 'verify_content', fallback=True)
 
 # Global debug flag
+
 DEBUG = False
 
 def debug_print(*args, **kwargs):
@@ -495,17 +497,21 @@ def search_range_in_deck(start_card: dict, end_card: dict, original_query: str, 
         })
     
     # Verification Step
-    full_reconstructed_text = " ".join(reconstructed_text_parts)
-    norm_query = normalize_text(original_query)
-    norm_reconstructed = normalize_text(full_reconstructed_text)
-    
-    if norm_query not in norm_reconstructed:
-        # Debug info could be useful, but for now just fail silently as per "output only if these texts match"
-        # STRICT VERIFICATION: The reconstructed text MUST contain the query.
-        debug_print("Verification failed.")
-        debug_print(f"Query (norm): '{norm_query}'")
-        debug_print(f"Found (norm): '{norm_reconstructed}'")
-        return []
+    if VERIFY_CONTENT:
+        full_reconstructed_text = " ".join(reconstructed_text_parts)
+        norm_query = normalize_text(original_query)
+        norm_reconstructed = normalize_text(full_reconstructed_text)
+        
+        if norm_query not in norm_reconstructed:
+            # Debug info could be useful, but for now just fail silently as per "output only if these texts match"
+            # STRICT VERIFICATION: The reconstructed text MUST contain the query.
+            debug_print("Verification failed.")
+            debug_print(f"Query (norm): '{norm_query}'")
+            debug_print(f"Found (norm): '{norm_reconstructed}'")
+            return []
+    else:
+        debug_print("Content verification skipped (disabled in config).")
+
 
     return card_data
 
@@ -615,15 +621,22 @@ if __name__ == "__main__":
                              if s_card['CardId'] == e_card['CardId']:
                                  debug_print(f"Single card candidate found (ID={s_card['CardId']}). Verifying locally...")
                                  # Reconstruct and Verify
-                                 card_text = reconstruct_card_text(s_card)
-                                 if normalize_text(query_text) in normalize_text(card_text):
-                                     debug_print("Single card range verified and accepted.")
+                                 if VERIFY_CONTENT:
+                                     card_text = reconstruct_card_text(s_card)
+                                     if normalize_text(query_text) in normalize_text(card_text):
+                                          debug_print("Single card range verified and accepted.")
+                                          result = [s_card]
+                                          found_range = True
+                                          break
+                                     else:
+                                          debug_print("Single card content mismatch.")
+                                          continue
+                                 else:
+                                     debug_print("Single card range accepted (verification skipped).")
                                      result = [s_card]
                                      found_range = True
                                      break
-                                 else:
-                                     debug_print("Single card content mismatch.")
-                                     continue
+
 
                              # Found a valid range!
                              debug_print(f"Checking candidate range: Deck='{s_card['DeckName']}', StartID={s_card['CardId']}, EndID={e_card['CardId']}")
