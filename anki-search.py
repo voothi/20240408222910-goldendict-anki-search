@@ -27,8 +27,8 @@ from typing import Optional, List, Tuple
 
 # AnkiConnect configuration
 ANKI_CONNECT_URL = 'http://localhost:8765'
-ANKI_CONNECT_URL = 'http://localhost:8765'
 BATCH_SIZE = 100
+
 
 # Configuration defaults
 DEFAULT_SEPARATOR_CHARS = ". , : ; ? ! —"
@@ -136,8 +136,8 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
     # We use a global search (no field prefix) or specific field patterns to satisfy the "not depend on field name" requirement
     # while acting as an additional filter on top of the static condition.
     # Construct the final query.
-    # Construct the final query.
     if search_type == "word":
+
         # Dynamic Condition for Words: Global/Flexible language search
         language_filter = ""
         if languages:
@@ -344,12 +344,8 @@ def normalize_text(text: str) -> str:
     return text.lower()
 
 
-
-
-    return text.lower()
-
-
 def is_valid_deck(deck_name: str) -> bool:
+
     """
     Checks if the deck is valid for range search.
     Rule: The LEAF deck name (last part of path) must start with '0'.
