@@ -171,6 +171,46 @@ class TestAnkiSearch(unittest.TestCase):
         results = anki_search.search_range_in_deck(start_card, end_card, "query")
         self.assertEqual(results, [])
 
+    @patch('anki_search.invoke_ac')
+    def test_real_monitor_theory_example(self, mock_invoke):
+        """
+        Test based on real user data from request 20260117203810.
+        Verifies that a paragraph broken into multiple phrase cards is correctly retrieved and verified.
+        """
+        full_text = (
+            'This book is concerned with what has been called the "Monitor Theory" of adult second language acquisition. '
+            'Monitor Theory hypothesizes that adults have two independent systems for developing ability in second languages, '
+            'subconscious language acquisition and conscious language learning, '
+            'and that these systems are interrelated in a definite way: '
+            'subconscious acquisition appears to be far more important.'
+        )
+
+        start_card = {'DeckName': '01-RealDeck', 'CardId': 1000}
+        end_card = {'DeckName': '01-RealDeck', 'CardId': 1004}
+
+        # Mock findCards: Returns IDs for all cards in the sequence (plus some extras/surrounding)
+        mock_invoke.side_effect = [
+            [999, 1000, 1001, 1002, 1003, 1004, 1005], # findCards
+            # cardsInfo
+            [
+                {'cardId': 1000, 'fields': {'SentenceSource': {'value': 'This book is concerned with what has been called the "Monitor Theory" of adult second language acquisition.'}}},
+                {'cardId': 1001, 'fields': {'SentenceSource': {'value': 'Monitor Theory hypothesizes that adults have two independent systems for developing ability in second languages,'}}},
+                {'cardId': 1002, 'fields': {'SentenceSource': {'value': 'subconscious language acquisition and conscious language learning,'}}},
+                {'cardId': 1003, 'fields': {'SentenceSource': {'value': 'and that these systems are interrelated in a definite way:'}}},
+                {'cardId': 1004, 'fields': {'SentenceSource': {'value': 'subconscious acquisition appears to be far more important.'}}}
+            ]
+        ]
+        
+        results = anki_search.search_range_in_deck(start_card, end_card, full_text)
+        
+        # Should return all 5 cards
+        self.assertEqual(len(results), 5)
+        self.assertEqual(results[0]['SentenceSource'], 'This book is concerned with what has been called the "Monitor Theory" of adult second language acquisition.')
+        self.assertEqual(results[4]['SentenceSource'], 'subconscious acquisition appears to be far more important.')
+        
+        # Verify text normalization worked (query has newlines/spaces that might differ slightly, but verify logic normalizes them)
+
+
 
 if __name__ == '__main__':
     unittest.main()
