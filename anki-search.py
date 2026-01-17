@@ -314,7 +314,9 @@ def normalize_text(text: str) -> str:
     """
     Normalizes text for comparison by removing all whitespace, hyphens, HTML entities,
     and converting to lowercase. Uses logic similar to user's cleanup script.
+    Reference: https://github.com/voothi/20240310195111-remove-newline-util
     """
+
     if not text:
         return ""
     
