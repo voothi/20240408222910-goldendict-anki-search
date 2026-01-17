@@ -312,12 +312,26 @@ def extract_anchors(query: str) -> Tuple[Optional[str], Optional[str]]:
 
 def normalize_text(text: str) -> str:
     """
-    Normalizes text for comparison by removing all whitespace and converting to lowercase.
+    Normalizes text for comparison by removing all whitespace, hyphens, HTML entities,
+    and converting to lowercase. Uses logic similar to user's cleanup script.
     """
     if not text:
         return ""
-    # Remove all whitespace characters (space, tab, newline, return, formfeed)
-    return "".join(text.split()).lower()
+    
+    # 1. Remove HTML tags (redundant if field is stripped, but safe)
+    text = re.sub(r'<[^<]+?>', '', text)
+    
+    # 2. Remove HTML entities (e.g. &nbsp;, &amp;)
+    text = re.sub(r'&\w+;', '', text)
+    
+    # 3. Remove hyphens (handles word breaks: "Mon-itor" -> "Monitor")
+    text = text.replace('-', '')
+    
+    # 4. Remove all whitespace characters
+    text = "".join(text.split())
+    
+    return text.lower()
+
 
 
 def search_range_in_deck(start_card: dict, end_card: dict, original_query: str, html_output: bool = False) -> List[dict]:

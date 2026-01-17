@@ -138,24 +138,25 @@ class TestAnkiSearch(unittest.TestCase):
         mock_invoke.side_effect = [
             [100, 200],
             [
-                {'cardId': 100, 'fields': {'SentenceSource': {'value': '  Start  '}}},
+                {'cardId': 100, 'fields': {'SentenceSource': {'value': 'Start&nbsp;Se-gment'}}}, # Entity &nbsp;, Hyphen
                 {'cardId': 200, 'fields': {'SentenceSource': {'value': 'End.'}}}
             ]
         ]
         
-        # Query with different spacing/case/punctuation
-        # Note: logic only strips whitespace, not punctuation from content?
-        # User requirement: "remove all spaces... to compare only the content part. And... lower case"
-        # My implementation of `normalize_text` removes WHITESPACE and lowers. It does NOT remove punctuation.
-        # But `_strip_html` might handle tags. 
-        # If "End." in card and "End" in query -> Mismatch if dot exists.
-        # Let's assume strict content match including punctuation is desired, but ignoring format (spaces).
-        # Adjust test to match expected behavior.
+        # Original query: "Start Segment End."
+        # Normalized Card: "startsegmentend." (Entity removed/ignored, Hyphen removed, Spaces removed)
+        # Normalized Query: "startsegmentend." (Spaces removed)
         
-        original_query = "start end."
+        # "Start&nbsp;Se-gment" -> Remove entities -> "StartSe-gment" -> Remove hyphens -> "StartSegment" -> Lower -> "startsegment"
+        # "End." -> "end."
+        
+        # Query: "Start Segment End." -> "startsegmentend."
+        
+        original_query = "Start Segment End."
         
         results = anki_search.search_range_in_deck(start_card, end_card, original_query)
         self.assertEqual(len(results), 2)
+
 
 
     def test_search_range_invalid_deck(self):
