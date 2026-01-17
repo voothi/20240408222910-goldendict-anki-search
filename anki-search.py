@@ -20,11 +20,31 @@ import requests
 import re
 import sys
 import pyperclip
-from typing import Optional, List
+import os
+import configparser
+from typing import Optional, List, Tuple
+
 
 # AnkiConnect configuration
 ANKI_CONNECT_URL = 'http://localhost:8765'
+ANKI_CONNECT_URL = 'http://localhost:8765'
 BATCH_SIZE = 100
+
+# Configuration defaults
+DEFAULT_SEPARATOR_CHARS = ". , : ; ? ! —"
+DEFAULT_ANCHOR_LENGTH = 4
+
+def load_config():
+    """Load configuration from config.ini in the same directory."""
+    config = configparser.ConfigParser()
+    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.ini')
+    config.read(config_path)
+    return config
+
+CONFIG = load_config()
+SEPARATOR_CHARS = [c.strip() for c in CONFIG.get('Search', 'separator_chars', fallback=DEFAULT_SEPARATOR_CHARS).split()]
+ANCHOR_LENGTH = CONFIG.getint('Search', 'anchor_length', fallback=DEFAULT_ANCHOR_LENGTH)
+
 
 # Reuse TCP connection for faster sequential requests
 _session = requests.Session()
@@ -166,6 +186,8 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
             cards_result = invoke_ac('findCardsInfo', query=query)
             if not cards_result:
                 return None
+            # Optimized mode returns a list directly, ensure CardId is present or added if missing
+            # Typically findCardsInfo returns objects with 'cardId'
         else:
              # Default mode: Standard compatibility (2 requests)
             card_ids = invoke_ac('findCards', query=query)
@@ -174,7 +196,7 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
 
             # Step 2: Retrieve detailed information
             cards_result = invoke_ac('cardsInfo', cards=card_ids)
-            
+
         # Parse and format the card data (shared for default and optimized modes)
         card_data = []
         for card in cards_result:
@@ -186,6 +208,7 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
                 return value if html_output else _strip_html(value)
 
             card_data.append({
+                "CardId": card.get("cardId"), # Vital for range search
                 "WordSource": get_field_value("WordSource"),
                 "WordSourceIPA": get_field_value("WordSourceIPA"),
                 "WordDestination": get_field_value("WordDestination"),
@@ -208,6 +231,149 @@ def _strip_html(text: str) -> str:
     clean = re.compile('<.*?>')
     text = re.sub(clean, ' ', text)
     return ' '.join(text.split()) # Consolidate multiple spaces into one.
+
+# --- New Logic for Multi-Sentence/Range Search ---
+
+def extract_anchors(query: str) -> Tuple[Optional[str], Optional[str]]:
+    """
+    Extracts start and end anchors from the query based on configuration.
+    
+    Anchors are truncated at the first/last punctuation mark to ensure they 
+    do not cross phrase/card boundaries.
+    """
+    words = query.strip().split()
+    if not words:
+        return None, None
+
+    # Helper to check for separators in a word (simple check)
+    def has_separator(w):
+        return any(sep in w for sep in SEPARATOR_CHARS)
+
+    # --- Start Anchor ---
+    start_anchor_words = []
+    for w in words:
+        if has_separator(w):
+            # If word contains a separator, include it (or part of it) and stop
+            # Logic: If 'hello,' we take 'hello,'. 
+            # But simpler: Just take the word. The user constraint is "Stop at the first punctuation".
+            # If the user meant "don't include the punctuation in the anchor search", we should strip it.
+            # Usually Anki search ignores punctuation, but let's be safe and just stop *before* or include up to it.
+            # Plan says: "Stop at the first punctuation... Take up to the first N words of this safe segment."
+            # So if we hit a separator, we stop adding words.
+            # If the FIRST word has a separator, we take just that word (or stripped?).
+            # Let's take words UNTIL we hit a separator-containing word.
+            # IF the first word has a separator, we take it (stripped) as the only word?
+            # User said: "without taking over punctuation marks".
+            
+            # Refined Safe Logic:
+            # Clean the word first? No.
+            # If 'word,' -> 'word' is safe, ',' is boundary.
+            # So we add 'word' and stop.
+            clean_w = w
+            for sep in SEPARATOR_CHARS:
+                clean_w = clean_w.replace(sep, "")
+            
+            if clean_w:
+                start_anchor_words.append(clean_w)
+            break
+        else:
+            start_anchor_words.append(w)
+            if len(start_anchor_words) >= ANCHOR_LENGTH:
+                break
+    
+    start_anchor = " ".join(start_anchor_words)
+
+    # --- End Anchor ---
+    # Scan backwards
+    end_anchor_words = []
+    reversed_words = words[::-1]
+    
+    for w in reversed_words:
+        if has_separator(w):
+             # Same logic as start, but backwards.
+            clean_w = w
+            for sep in SEPARATOR_CHARS:
+                clean_w = clean_w.replace(sep, "")
+            
+            if clean_w:
+                end_anchor_words.append(clean_w)
+            break
+        else:
+            end_anchor_words.append(w)
+            if len(end_anchor_words) >= ANCHOR_LENGTH:
+                break
+                
+    # Reverse back to normal order
+    end_anchor = " ".join(end_anchor_words[::-1])
+
+    return (start_anchor if start_anchor else None, 
+            end_anchor if end_anchor else None)
+
+
+def search_range_in_deck(start_card: dict, end_card: dict, html_output: bool = False) -> List[dict]:
+    """
+    Retrieves all cards in the specific deck between start_card and end_card (inclusive).
+    """
+    deck_name = start_card['DeckName']
+    
+    # Validation: Same deck?
+    if deck_name != end_card['DeckName']:
+        return []
+        
+    # Validation: Deck starts with '0'? (User constraint)
+    # Actually, user said: "And if we rely on this mechanism, then this should only work if the deck has a prefix in the name 0xxxxx-..."
+    if not deck_name.startswith("0"):
+         return []
+
+    min_id = min(start_card['CardId'], end_card['CardId'])
+    max_id = max(start_card['CardId'], end_card['CardId'])
+
+    # Get all cards in this deck to filter by ID.
+    # We can't easily query "deck:X AND cardId >= Min AND cardId <= Max" in Anki.
+    # Efficient approach: Get ALL IDs for the deck, then filter in Python.
+    # Note: If deck is huge, this is slow. But phrase decks are usually manageable?
+    # Optimization: Maybe search for deck:"..." and iterate?
+    
+    query = f'deck:"{deck_name}"'
+    all_ids = invoke_ac('findCards', query=query)
+    
+    if not all_ids:
+        return []
+    
+    # Filter IDs in range
+    range_ids = [cid for cid in all_ids if min_id <= cid <= max_id]
+    range_ids.sort()
+    
+    if not range_ids:
+        return []
+        
+    # Get details
+    cards_result = invoke_ac('cardsInfo', cards=range_ids)
+    
+    # Format (reuse logic, essentially)
+    card_data = []
+    for card in cards_result:
+        fields = card.get("fields", {})
+
+        def get_field_value(field_name: str) -> str:
+            value = fields.get(field_name, {}).get("value", "")
+            return value if html_output else _strip_html(value)
+
+        card_data.append({
+            "CardId": card.get("cardId"),
+            "WordSource": get_field_value("WordSource"),
+            "WordSourceIPA": get_field_value("WordSourceIPA"),
+            "WordDestination": get_field_value("WordDestination"),
+            "SentenceSource": get_field_value("SentenceSource"),
+            "WordSourceInflectedForm": get_field_value("WordSourceInflectedForm"),
+            "SentenceDestination": get_field_value("SentenceDestination"),
+            "SentenceDestination2": get_field_value("SentenceDestination2"),
+            "WordSourceMorphologyAI": get_field_value("WordSourceMorphologyAI"),
+            "DeckName": card.get("deckName", "")
+        })
+        
+    return card_data
+
 
 # --- Main execution block ---
 if __name__ == "__main__":
@@ -244,7 +410,44 @@ if __name__ == "__main__":
         open_in_anki_browser(args.browse_query)
     # Priority 3: If a search query is given, perform the search and print results.
     elif args.query:
-        result = search_word_in_decks(args.query, args.search_type, languages=args.languages, html_output=args.html, only_ids=args.only_ids, optimized=args.optimized)
+        query_text = args.query.strip()
+        result = None
+        
+        # --- Attempt Range Search if applicable ---
+        # Heuristic: If query has more words than ANCHOR_LENGTH, it might be a multi-sentence/phrase segment.
+        if len(query_text.split()) > ANCHOR_LENGTH:
+             start_str, end_str = extract_anchors(query_text)
+             
+             if start_str and end_str and start_str != end_str:
+                 # Search for Start Cards
+                 start_candidates = search_word_in_decks(start_str, args.search_type, languages=args.languages, optimized=args.optimized)
+                 
+                 # Search for End Cards
+                 end_candidates = search_word_in_decks(end_str, args.search_type, languages=args.languages, optimized=args.optimized)
+                 
+                 if start_candidates and end_candidates:
+                     # Find a matching pair in the same deck (starting with 0)
+                     found_range = False
+                     for s_card in start_candidates:
+                         if found_range: break
+                         
+                         # Check deck prefix constraint early
+                         if not s_card['DeckName'].startswith('0'):
+                             continue
+                             
+                         for e_card in end_candidates:
+                             if s_card['DeckName'] == e_card['DeckName'] and s_card['CardId'] <= e_card['CardId']:
+                                 # Found a valid range!
+                                 range_result = search_range_in_deck(s_card, e_card, html_output=args.html)
+                                 if range_result:
+                                     result = range_result
+                                     found_range = True
+                                     break
+        
+        # --- Fallback to Standard Search ---
+        if not result:
+             result = search_word_in_decks(query_text, args.search_type, languages=args.languages, html_output=args.html, only_ids=args.only_ids, optimized=args.optimized)
+
         if result:
             if args.only_ids:
                  # Fast mode output: just IDs

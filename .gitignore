@@ -92,3 +92,5 @@ build
 dist/
 
 references/
+
+__pycache__/
