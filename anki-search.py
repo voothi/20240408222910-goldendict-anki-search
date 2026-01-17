@@ -556,7 +556,6 @@ if __name__ == "__main__":
                  # Search for End Cards
                  end_candidates = search_word_in_decks(end_str, args.search_type, languages=args.languages, optimized=args.optimized)
                  debug_print(f"End candidates found: {len(end_candidates) if end_candidates else 0}")
-                 
                  if start_candidates and end_candidates:
                      # Find a matching pair in the same deck (starting with 0)
                      found_range = False
@@ -567,20 +566,19 @@ if __name__ == "__main__":
                          if not is_valid_deck(s_card['DeckName']):
                              debug_print(f"Skipping Start Candidate (Leaf Deck not '0...'): Deck='{s_card['DeckName']}'")
                              continue
+
                          for e_card in end_candidates:
-                              # Logic update: Allow same deck OR sibling decks (same parent)
-                              is_sibling = False
-                              if s_card['DeckName'] != e_card['DeckName']:
-                                  # Check if siblings
-                                  s_parent = get_parent_deck(s_card['DeckName'])
-                                  e_parent = get_parent_deck(e_card['DeckName'])
-                                  if s_parent and e_parent and s_parent == e_parent:
-                                      is_sibling = True
-                                  else:
-                                      # debug_print(f"Skipping End Candidate (Deck mismatch/Not siblings): StartDeck='{s_card['DeckName']}', EndDeck='{e_card['DeckName']}'")
-                                      continue
-                                  
-                              if s_card['CardId'] > e_card['CardId']:
+                             # Logic update: Allow same deck OR sibling decks (same parent)
+                             is_sibling = False
+                             if s_card['DeckName'] != e_card['DeckName']:
+                                 # Check if siblings
+                                 s_parent = get_parent_deck(s_card['DeckName'])
+                                 e_parent = get_parent_deck(e_card['DeckName'])
+                                 if not (s_parent and e_parent and s_parent == e_parent):
+                                     # debug_print(f"Skipping End Candidate (Deck mismatch/Not siblings): StartDeck='{s_card['DeckName']}', EndDeck='{e_card['DeckName']}'")
+                                     continue
+                                 
+                             if s_card['CardId'] > e_card['CardId']:
                                  debug_print(f"Skipping End Candidate (ID Order): StartID={s_card['CardId']}, EndID={e_card['CardId']}")
                                  continue
 
