@@ -567,7 +567,6 @@ if __name__ == "__main__":
                          if not is_valid_deck(s_card['DeckName']):
                              debug_print(f"Skipping Start Candidate (Leaf Deck not '0...'): Deck='{s_card['DeckName']}'")
                              continue
-                             
                          for e_card in end_candidates:
                               # Logic update: Allow same deck OR sibling decks (same parent)
                               is_sibling = False
