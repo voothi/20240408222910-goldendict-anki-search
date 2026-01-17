@@ -45,7 +45,12 @@ CONFIG = load_config()
 SEPARATOR_CHARS = [c.strip() for c in CONFIG.get('Search', 'separator_chars', fallback=DEFAULT_SEPARATOR_CHARS).split()]
 ANCHOR_LENGTH = CONFIG.getint('Search', 'anchor_length', fallback=DEFAULT_ANCHOR_LENGTH)
 VERIFY_CONTENT = CONFIG.getboolean('Search', 'verify_content', fallback=True)
-DECK_FILTER = CONFIG.get('Search', 'deck_filter', fallback='').strip()
+_deck_filter_raw = CONFIG.get('Search', 'deck_filter', fallback='').strip()
+# Remove optional 'deck:' prefix if user included it
+if _deck_filter_raw.lower().startswith("deck:"):
+    DECK_FILTER = _deck_filter_raw[5:].strip()
+else:
+    DECK_FILTER = _deck_filter_raw
 
 # Global debug flag
 
