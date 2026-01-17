@@ -161,11 +161,43 @@ class TestAnkiSearch(unittest.TestCase):
 
 
     def test_search_range_invalid_deck(self):
-        # Deck doesn't start with 0
+        # Deck doesn't start with 0 in the leaf part
         start_card = {'DeckName': 'TestDeck', 'CardId': 100}
         end_card = {'DeckName': 'TestDeck', 'CardId': 200}
         results = anki_search.search_range_in_deck(start_card, end_card, "query")
         self.assertEqual(results, [])
+        
+        # Nested invalid
+        start_card = {'DeckName': 'Parent::Child', 'CardId': 100}
+        end_card = {'DeckName': 'Parent::Child', 'CardId': 200}
+        results = anki_search.search_range_in_deck(start_card, end_card, "query")
+        self.assertEqual(results, [])
+
+    @patch('anki_search.invoke_ac')
+    def test_search_range_nested_valid_deck(self, mock_invoke):
+        # Nested valid: Leaf starts with 0
+        start_card = {'DeckName': 'Parent::01-Child', 'CardId': 100}
+        end_card = {'DeckName': 'Parent::01-Child', 'CardId': 200}
+        
+        # Mocking success path
+        mock_invoke.side_effect = [
+            [100, 200],
+            [
+                {'cardId': 100, 'fields': {'SentenceSource': {'value': 'Start'}}},
+                {'cardId': 200, 'fields': {'SentenceSource': {'value': 'End'}}}
+            ]
+        ]
+        
+        results = anki_search.search_range_in_deck(start_card, end_card, "start end")
+        self.assertEqual(len(results), 2)
+
+    def test_is_valid_deck_helper(self):
+        self.assertTrue(anki_search.is_valid_deck("01-Deck"))
+        self.assertTrue(anki_search.is_valid_deck("Parent::01-Deck"))
+        self.assertTrue(anki_search.is_valid_deck("Grand::Parent::01-Deck"))
+        self.assertFalse(anki_search.is_valid_deck("Deck"))
+        self.assertFalse(anki_search.is_valid_deck("01-Parent::Child")) # Leaf is Child
+
 
     def test_search_range_different_decks(self):
         start_card = {'DeckName': '01-DeckA', 'CardId': 100}

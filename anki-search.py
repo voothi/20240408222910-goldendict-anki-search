@@ -346,6 +346,22 @@ def normalize_text(text: str) -> str:
 
 
 
+    return text.lower()
+
+
+def is_valid_deck(deck_name: str) -> bool:
+    """
+    Checks if the deck is valid for range search.
+    Rule: The LEAF deck name (last part of path) must start with '0'.
+    Anki decks are separated by '::'.
+    """
+    if not deck_name:
+        return False
+    # Split by separator and take the last part
+    leaf_name = deck_name.split('::')[-1]
+    return leaf_name.startswith('0')
+
+
 def search_range_in_deck(start_card: dict, end_card: dict, original_query: str, html_output: bool = False) -> List[dict]:
     """
     Retrieves all cards in the specific deck between start_card and end_card (inclusive).
@@ -359,10 +375,11 @@ def search_range_in_deck(start_card: dict, end_card: dict, original_query: str, 
         return []
         
     # Validation: Deck starts with '0'? (User constraint)
-    if not deck_name.startswith("0"):
+    if not is_valid_deck(deck_name):
          return []
 
     min_id = min(start_card['CardId'], end_card['CardId'])
+
     max_id = max(start_card['CardId'], end_card['CardId'])
 
     query = f'deck:"{deck_name}"'
@@ -457,8 +474,10 @@ if __name__ == "__main__":
     search_group.add_argument("--only-ids", action="store_true", help="Fast mode: only check for existence (returns IDs), skipping detailed info.")
     search_group.add_argument("--optimized", action="store_true", help="Use the optimized 'findCardsInfo' API (requires kardenwort-ankiconnect).")
     search_group.add_argument("--debug", action="store_true", help="Enable debug output to stderr.")
+    search_group.add_argument("--query-file", help="Read query from a file (overrides --query).")
 
     browse_group = parser.add_argument_group('Browser arguments')
+
 
     browse_group.add_argument("--browse-query", help="A query to open directly in the Anki Browser (e.g., --browse-query \"deck:MyDeck\")")
     browse_group.add_argument("--browse-clipboard", action="store_true", help="Use the content of the clipboard as the query to open in the Anki Browser.")
@@ -480,12 +499,22 @@ if __name__ == "__main__":
     # Priority 2: If a direct browse query is given.
     elif args.browse_query:
         open_in_anki_browser(args.browse_query)
-    # Priority 3: If a search query is given, perform the search and print results.
-    elif args.query:
-        query_text = args.query.strip()
+    # Priority 3: If a search query is given (or via file), perform the search and print results.
+    elif args.query or args.query_file:
+        if args.query_file:
+             try:
+                 with open(args.query_file, 'r', encoding='utf-8') as f:
+                     query_text = f.read().strip()
+             except Exception as e:
+                 print(f"Error reading query file: {e}", file=sys.stderr)
+                 sys.exit(1)
+        else:
+            query_text = args.query.strip()
+            
         result = None
         
         # --- Attempt Range Search if applicable ---
+
         # Heuristic: If query has more words than ANCHOR_LENGTH, it might be a multi-sentence/phrase segment.
         if len(query_text.split()) > ANCHOR_LENGTH:
              start_str, end_str = extract_anchors(query_text)
@@ -495,6 +524,10 @@ if __name__ == "__main__":
                  # Search for Start Cards
                  start_candidates = search_word_in_decks(start_str, args.search_type, languages=args.languages, optimized=args.optimized)
                  debug_print(f"Start candidates found: {len(start_candidates) if start_candidates else 0}")
+                 if start_candidates:
+                      for cand in start_candidates:
+                          debug_print(f"Start Candidate: ID={cand.get('CardId')}, Deck='{cand.get('DeckName')}'")
+
                  
                  # Search for End Cards
                  end_candidates = search_word_in_decks(end_str, args.search_type, languages=args.languages, optimized=args.optimized)
@@ -507,19 +540,29 @@ if __name__ == "__main__":
                          if found_range: break
                          
                          # Check deck prefix constraint early
-                         if not s_card['DeckName'].startswith('0'):
+                         if not is_valid_deck(s_card['DeckName']):
+                             debug_print(f"Skipping Start Candidate (Leaf Deck not '0...'): Deck='{s_card['DeckName']}'")
                              continue
                              
                          for e_card in end_candidates:
-                             if s_card['DeckName'] == e_card['DeckName'] and s_card['CardId'] <= e_card['CardId']:
-                                 # Found a valid range!
-                                 debug_print(f"Checking candidate range: Deck='{s_card['DeckName']}', StartID={s_card['CardId']}, EndID={e_card['CardId']}")
-                                 range_result = search_range_in_deck(s_card, e_card, query_text, html_output=args.html)
-                                 if range_result:
-                                     debug_print("Range verified and accepted.")
-                                     result = range_result
-                                     found_range = True
-                                     break
+                             if s_card['DeckName'] != e_card['DeckName']:
+                                 debug_print(f"Skipping End Candidate (Deck mismatch): StartDeck='{s_card['DeckName']}', EndDeck='{e_card['DeckName']}'")
+                                 continue
+                                 
+                             if s_card['CardId'] > e_card['CardId']:
+                                 debug_print(f"Skipping End Candidate (ID Order): StartID={s_card['CardId']}, EndID={e_card['CardId']}")
+                                 continue
+
+                             # Found a valid range!
+                             debug_print(f"Checking candidate range: Deck='{s_card['DeckName']}', StartID={s_card['CardId']}, EndID={e_card['CardId']}")
+
+                             range_result = search_range_in_deck(s_card, e_card, query_text, html_output=args.html)
+                             if range_result:
+                                 debug_print("Range verified and accepted.")
+                                 result = range_result
+                                 found_range = True
+                                 break
+
                      if not found_range:
                          debug_print("No valid verified range found among candidates.")
         
