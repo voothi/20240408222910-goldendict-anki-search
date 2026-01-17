@@ -1,7 +1,0 @@
-[DEBUG] Anchors extracted: Start='This book is concerned', End='important'
-[DEBUG] Start candidates found: 1
-[DEBUG] Start Candidate: ID=1764084371721, Deck='201100-en-common::20251125162935-sl-acquisition-and-learning::20251125162519-introduction-this-book-is.triple.en::100001-introduction::100001-introduction::000002-this-book-is-concerned'
-[DEBUG] End candidates found: 51
-[DEBUG] Skipping Start Candidate (Deck not '0...'): Deck='201100-en-common::20251125162935-sl-acquisition-and-learning::20251125162519-introduction-this-book-is.triple.en::100001-introduction::100001-introduction::000002-this-book-is-concerned'
-[DEBUG] No valid verified range found among candidates.
-[DEBUG] Falling back to standard search.
