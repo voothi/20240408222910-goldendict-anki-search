@@ -2,7 +2,7 @@
 
 A command-line utility to interact with Anki via the AnkiConnect add-on.
 
-[![Version](https://img.shields.io/badge/version-v1.50.2-blue)](https://github.com/voothi/20240408222910-goldendict-anki-search) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-v1.52.2-blue)](https://github.com/voothi/20240408222910-goldendict-anki-search) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 This script provides two main functionalities for interacting with your Anki collection from the command line:
 
@@ -144,7 +144,7 @@ Once the AHK script is configured and running, you have two ways to search from 
 -   **Search Logic**: When using the `--query` argument, the script constructs a specific search query tailored to find terms in `WordSource`, `WordSourceInflectedForm`, or `SentenceSource` fields. This logic is hardcoded in the `search_word_in_decks` function and can be modified to fit different note types.
 -   **Multi-Sentence Logic**: For long queries, the script extracts "Start" and "End" anchors. It identifies a range of cards in Anki, reconstructs the text, and verifies it against the original query using robust normalization (ignoring whitespace/case/punctuation).
 -   **Clipboard Bridge**: The `--browse-clipboard` argument acts as a bridge for other applications. The AutoHotkey script copies the selected text to the clipboard and then calls this Python script with that argument, which in turn tells Anki to search for the clipboard's content.
--   **Configuration (`config.ini`)**: Settings for anchor detection and boundary punctuation can be customized in the local `config.ini` file.
+-   **Configuration (`config.ini`)**: Settings for anchor detection, boundary punctuation, and deck filtering can be customized in the local `config.ini` file.
 
 
 [Back to Top](#table-of-contents)

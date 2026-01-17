@@ -1,4 +1,11 @@
-# Release Notes
+
+## v1.52.2 (2026-01-17)
+
+### New Features
+- **Deck Filtering**: Added `deck_filter` key to `config.ini` to limit valid search results to a specific deck or hierarchy.
+  - Supports wildcard matching for unique IDs (e.g., `201100` matches `Root::201100-MyDeck`).
+  - Supports optional `deck:` prefix for easier pasting.
+  - Supports multi-line indented values for long deck names.
 
 ## v1.50.2 (2026-01-17)
 
