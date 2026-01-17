@@ -89,13 +89,16 @@ class TestAnkiSearch(unittest.TestCase):
             [50, 100, 150, 200, 250], # findCards response
             # cardsInfo response
             [
-                {'cardId': 100, 'fields': {'WordSource': {'value': 'Start'}}},
-                {'cardId': 150, 'fields': {'WordSource': {'value': 'Middle'}}},
-                {'cardId': 200, 'fields': {'WordSource': {'value': 'End'}}}
+                {'cardId': 100, 'fields': {'SentenceSource': {'value': 'Start'}}},
+                {'cardId': 150, 'fields': {'SentenceSource': {'value': 'Middle'}}},
+                {'cardId': 200, 'fields': {'SentenceSource': {'value': 'End'}}}
             ]
         ]
         
-        results = anki_search.search_range_in_deck(start_card, end_card)
+        # Query must match "StartMiddleEnd" when normalized
+        original_query = "Start Middle End"
+        
+        results = anki_search.search_range_in_deck(start_card, end_card, original_query)
         
         # Verify findCards called with correct deck
         mock_invoke.assert_any_call('findCards', query='deck:"01-TestDeck"')
@@ -108,18 +111,66 @@ class TestAnkiSearch(unittest.TestCase):
         self.assertEqual(results[1]['CardId'], 150)
         self.assertEqual(results[2]['CardId'], 200)
 
+    @patch('anki_search.invoke_ac')
+    def test_search_range_content_mismatch(self, mock_invoke):
+        start_card = {'DeckName': '01-TestDeck', 'CardId': 100}
+        end_card = {'DeckName': '01-TestDeck', 'CardId': 200}
+        
+        mock_invoke.side_effect = [
+            [100, 200],
+            [
+                {'cardId': 100, 'fields': {'SentenceSource': {'value': 'Start'}}},
+                {'cardId': 200, 'fields': {'SentenceSource': {'value': 'End'}}}
+            ]
+        ]
+        
+        # Mismatch query
+        original_query = "Start SomethingElse End"
+        
+        results = anki_search.search_range_in_deck(start_card, end_card, original_query)
+        self.assertEqual(results, [])
+
+    @patch('anki_search.invoke_ac')
+    def test_search_range_content_normalization(self, mock_invoke):
+        start_card = {'DeckName': '01-TestDeck', 'CardId': 100}
+        end_card = {'DeckName': '01-TestDeck', 'CardId': 200}
+        
+        mock_invoke.side_effect = [
+            [100, 200],
+            [
+                {'cardId': 100, 'fields': {'SentenceSource': {'value': '  Start  '}}},
+                {'cardId': 200, 'fields': {'SentenceSource': {'value': 'End.'}}}
+            ]
+        ]
+        
+        # Query with different spacing/case/punctuation
+        # Note: logic only strips whitespace, not punctuation from content?
+        # User requirement: "remove all spaces... to compare only the content part. And... lower case"
+        # My implementation of `normalize_text` removes WHITESPACE and lowers. It does NOT remove punctuation.
+        # But `_strip_html` might handle tags. 
+        # If "End." in card and "End" in query -> Mismatch if dot exists.
+        # Let's assume strict content match including punctuation is desired, but ignoring format (spaces).
+        # Adjust test to match expected behavior.
+        
+        original_query = "start end."
+        
+        results = anki_search.search_range_in_deck(start_card, end_card, original_query)
+        self.assertEqual(len(results), 2)
+
+
     def test_search_range_invalid_deck(self):
         # Deck doesn't start with 0
         start_card = {'DeckName': 'TestDeck', 'CardId': 100}
         end_card = {'DeckName': 'TestDeck', 'CardId': 200}
-        results = anki_search.search_range_in_deck(start_card, end_card)
+        results = anki_search.search_range_in_deck(start_card, end_card, "query")
         self.assertEqual(results, [])
 
     def test_search_range_different_decks(self):
         start_card = {'DeckName': '01-DeckA', 'CardId': 100}
         end_card = {'DeckName': '01-DeckB', 'CardId': 200}
-        results = anki_search.search_range_in_deck(start_card, end_card)
+        results = anki_search.search_range_in_deck(start_card, end_card, "query")
         self.assertEqual(results, [])
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -310,9 +310,21 @@ def extract_anchors(query: str) -> Tuple[Optional[str], Optional[str]]:
             end_anchor if end_anchor else None)
 
 
-def search_range_in_deck(start_card: dict, end_card: dict, html_output: bool = False) -> List[dict]:
+def normalize_text(text: str) -> str:
+    """
+    Normalizes text for comparison by removing all whitespace and converting to lowercase.
+    """
+    if not text:
+        return ""
+    # Remove all whitespace characters (space, tab, newline, return, formfeed)
+    return "".join(text.split()).lower()
+
+
+def search_range_in_deck(start_card: dict, end_card: dict, original_query: str, html_output: bool = False) -> List[dict]:
     """
     Retrieves all cards in the specific deck between start_card and end_card (inclusive).
+    
+    Verifies that the concatenated text of the retrieved cards matches the original_query.
     """
     deck_name = start_card['DeckName']
     
@@ -321,19 +333,12 @@ def search_range_in_deck(start_card: dict, end_card: dict, html_output: bool = F
         return []
         
     # Validation: Deck starts with '0'? (User constraint)
-    # Actually, user said: "And if we rely on this mechanism, then this should only work if the deck has a prefix in the name 0xxxxx-..."
     if not deck_name.startswith("0"):
          return []
 
     min_id = min(start_card['CardId'], end_card['CardId'])
     max_id = max(start_card['CardId'], end_card['CardId'])
 
-    # Get all cards in this deck to filter by ID.
-    # We can't easily query "deck:X AND cardId >= Min AND cardId <= Max" in Anki.
-    # Efficient approach: Get ALL IDs for the deck, then filter in Python.
-    # Note: If deck is huge, this is slow. But phrase decks are usually manageable?
-    # Optimization: Maybe search for deck:"..." and iterate?
-    
     query = f'deck:"{deck_name}"'
     all_ids = invoke_ac('findCards', query=query)
     
@@ -350,28 +355,59 @@ def search_range_in_deck(start_card: dict, end_card: dict, html_output: bool = F
     # Get details
     cards_result = invoke_ac('cardsInfo', cards=range_ids)
     
-    # Format (reuse logic, essentially)
+    # Format
     card_data = []
+    
+    reconstructed_text_parts = []
+    
     for card in cards_result:
         fields = card.get("fields", {})
 
-        def get_field_value(field_name: str) -> str:
+        def get_field_value(field_name: str, strip_html: bool = True) -> str:
             value = fields.get(field_name, {}).get("value", "")
-            return value if html_output else _strip_html(value)
+            return value if not strip_html else _strip_html(value)
+
+        # For reconstruction, we always want stripped text
+        # Preference: SentenceSource -> WordSource
+        # User note: "phrase cards, that is, those whose WordSource is empty and SentenceSource is not"
+        # But we should probably look at both to be safe or strictly follow the user's description.
+        # Let's concatenate SentenceSource. If empty, maybe WordSource?
+        # Actually, if it's a mix, we might need both.
+        # Safe bet: Concatenate Sentences.
+        s_source = get_field_value("SentenceSource")
+        w_source = get_field_value("WordSource")
+        
+        # Heuristic: If SentenceSource is present, use it. Else WordSource.
+        # Or construct "WordSource SentenceSource"?
+        # Given the "phrase card" description, SentenceSource is the key.
+        # Let's append SentenceSource if it exists.
+        if s_source:
+             reconstructed_text_parts.append(s_source)
+        elif w_source:
+             reconstructed_text_parts.append(w_source)
 
         card_data.append({
             "CardId": card.get("cardId"),
-            "WordSource": get_field_value("WordSource"),
-            "WordSourceIPA": get_field_value("WordSourceIPA"),
-            "WordDestination": get_field_value("WordDestination"),
-            "SentenceSource": get_field_value("SentenceSource"),
-            "WordSourceInflectedForm": get_field_value("WordSourceInflectedForm"),
-            "SentenceDestination": get_field_value("SentenceDestination"),
-            "SentenceDestination2": get_field_value("SentenceDestination2"),
-            "WordSourceMorphologyAI": get_field_value("WordSourceMorphologyAI"),
+            "WordSource": get_field_value("WordSource", strip_html=not html_output),
+            "WordSourceIPA": get_field_value("WordSourceIPA", strip_html=not html_output),
+            "WordDestination": get_field_value("WordDestination", strip_html=not html_output),
+            "SentenceSource": get_field_value("SentenceSource", strip_html=not html_output),
+            "WordSourceInflectedForm": get_field_value("WordSourceInflectedForm", strip_html=not html_output),
+            "SentenceDestination": get_field_value("SentenceDestination", strip_html=not html_output),
+            "SentenceDestination2": get_field_value("SentenceDestination2", strip_html=not html_output),
+            "WordSourceMorphologyAI": get_field_value("WordSourceMorphologyAI", strip_html=not html_output),
             "DeckName": card.get("deckName", "")
         })
-        
+    
+    # Verification Step
+    reconstructed_full = "".join(reconstructed_text_parts)
+    norm_query = normalize_text(original_query)
+    norm_reconstructed = normalize_text(reconstructed_full)
+    
+    if norm_query != norm_reconstructed:
+        # Debug info could be useful, but for now just fail silently as per "output only if these texts match"
+        return []
+
     return card_data
 
 
@@ -438,11 +474,12 @@ if __name__ == "__main__":
                          for e_card in end_candidates:
                              if s_card['DeckName'] == e_card['DeckName'] and s_card['CardId'] <= e_card['CardId']:
                                  # Found a valid range!
-                                 range_result = search_range_in_deck(s_card, e_card, html_output=args.html)
+                                 range_result = search_range_in_deck(s_card, e_card, query_text, html_output=args.html)
                                  if range_result:
                                      result = range_result
                                      found_range = True
                                      break
+
         
         # --- Fallback to Standard Search ---
         if not result:
