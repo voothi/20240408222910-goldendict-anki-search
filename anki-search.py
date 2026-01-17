@@ -685,13 +685,12 @@ if __name__ == "__main__":
                 if args.html:
                     for i, card in enumerate(result):
                         lines = []
+                        if card['WordSourceIPA']: lines.append(f"[{card['WordSourceIPA']}]")
                         if card['WordSource']:
                             line = f"{card['WordSource']}"
                             if card['WordDestination']:
                                 line += f" - {card['WordDestination']}"
                             lines.append(line)
-                        # Add other fields if they exist
-                        if card['WordSourceIPA']: lines.append(f"[{card['WordSourceIPA']}]")
                         if card['WordSourceInflectedForm']: lines.append(f"{card['WordSourceInflectedForm']}")
                         if card['SentenceSource']: lines.append(f"{card['SentenceSource']}")
                         if card['SentenceDestination']: lines.append(f"- {card['SentenceDestination']}")
@@ -706,13 +705,13 @@ if __name__ == "__main__":
                             print("<br><br>")
                 else: # Plain text output
                     for i, card in enumerate(result):
+                        if card['WordSourceIPA']: print(f"[{card['WordSourceIPA']}]")
                         if card['WordSource']:
                             print(f"{card['WordSource']}", end='')
                             if card['WordDestination']:
-                                print(f" — {card['WordDestination']}")
+                                print(f" - {card['WordDestination']}")
                             else:
                                 print("")
-                        if card['WordSourceIPA']: print(f"[{card['WordSourceIPA']}]")
                         if card['WordSourceInflectedForm']: print(f"{card['WordSourceInflectedForm']}")
                         if card['SentenceSource']: print(f"{card['SentenceSource']}")
                         if card['SentenceDestination']: print(f"- {card['SentenceDestination']}")
