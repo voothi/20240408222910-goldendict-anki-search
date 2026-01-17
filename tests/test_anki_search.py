@@ -253,6 +253,16 @@ class TestAnkiSearch(unittest.TestCase):
         self.assertEqual(len(results), 5)
         self.assertEqual(results[0]['SentenceSource'], 'This book is concerned with what has been called the "Monitor Theory" of adult second language acquisition.')
         self.assertEqual(results[4]['SentenceSource'], 'subconscious acquisition appears to be far more important.')
+
+    def test_reconstruct_card_text(self):
+        card = {'SentenceSource': 'Hello', 'WordSource': 'World'}
+        self.assertEqual(anki_search.reconstruct_card_text(card), "Hello World")
+        
+        card2 = {'SentenceSource': 'Just Sentence'}
+        self.assertEqual(anki_search.reconstruct_card_text(card2), "Just Sentence")
+        
+        card3 = {'WordSource': 'Just Word'}
+        self.assertEqual(anki_search.reconstruct_card_text(card3), "Just Word")
         
 if __name__ == '__main__':
     unittest.main()

@@ -207,26 +207,34 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
 
         # Parse and format the card data (shared for default and optimized modes)
         card_data = []
+        
+        # Need to normalize keys or reuse parse logic?
+        # invoke_ac('cardsInfo') returns raw structure: {'fields': {'Name': {'value': '...'}}}
+        # search_word_in_decks helper does flattening. We should probably reuse that logic or duplicate lightweight version.
+        # Better to reuse the flattening logic if possible, or just parse directly here.
+        
         for card in cards_result:
             fields = card.get("fields", {})
+            
+            def get_val(f):
+                 val = fields.get(f, {}).get("value", "")
+                 return val if html_output else _strip_html(val)
 
-            def get_field_value(field_name: str) -> str:
-                """Helper to safely extract field values and optionally strip HTML."""
-                value = fields.get(field_name, {}).get("value", "")
-                return value if html_output else _strip_html(value)
-
-            card_data.append({
-                "CardId": card.get("cardId"), # Vital for range search
-                "WordSource": get_field_value("WordSource"),
-                "WordSourceIPA": get_field_value("WordSourceIPA"),
-                "WordDestination": get_field_value("WordDestination"),
-                "SentenceSource": get_field_value("SentenceSource"),
-                "WordSourceInflectedForm": get_field_value("WordSourceInflectedForm"),
-                "SentenceDestination": get_field_value("SentenceDestination"),
-                "SentenceDestination2": get_field_value("SentenceDestination2"),
-                "WordSourceMorphologyAI": get_field_value("WordSourceMorphologyAI"),
+            # Create standardized dict
+            flat_card = {
+                "CardId": card.get("cardId"),
+                "WordSource": get_val("WordSource"),
+                "WordSourceIPA": get_val("WordSourceIPA"),
+                "WordDestination": get_val("WordDestination"),
+                "SentenceSource": get_val("SentenceSource"),
+                "WordSourceInflectedForm": get_val("WordSourceInflectedForm"),
+                "SentenceDestination": get_val("SentenceDestination"),
+                "SentenceDestination2": get_val("SentenceDestination2"),
+                "WordSourceMorphologyAI": get_val("WordSourceMorphologyAI"),
                 "DeckName": card.get("deckName", "")
-            })
+            }
+            card_data.append(flat_card)
+            
         return card_data
 
     except Exception as e:
@@ -269,8 +277,6 @@ def extract_anchors(query: str) -> Tuple[Optional[str], Optional[str]]:
             # Plan says: "Stop at the first punctuation... Take up to the first N words of this safe segment."
             # So if we hit a separator, we stop adding words.
             # If the FIRST word has a separator, we take just that word (or stripped?).
-            # Let's take words UNTIL we hit a separator-containing word.
-            # IF the first word has a separator, we take it (stripped) as the only word?
             # User said: "without taking over punctuation marks".
             
             # Refined Safe Logic:
@@ -369,6 +375,29 @@ def get_parent_deck(deck_name: str) -> Optional[str]:
     return '::'.join(deck_name.split('::')[:-1])
 
 
+def reconstruct_card_text(card: dict) -> str:
+    """
+    Reconstructs the full text content of a card for verification.
+    Concatenates SentenceSource and WordSource.
+    """
+    # Note: 'card' dictionary keys depend on where they came from.
+    # search_word_in_decks returns keys like 'SentenceSource', 'WordSource'.
+    # invoke_ac results might use 'fields' -> '...'. 
+    # BUT search_word_in_decks standardizes them! 
+    # Let's ensure we use the standardized keys.
+    
+    parts = []
+    # Using .get() with default string
+    ss = card.get('SentenceSource', '')
+    if ss: parts.append(ss)
+    
+    ws = card.get('WordSource', '')
+    if ws: parts.append(ws)
+    
+    return " ".join(parts)
+
+
+
 def search_range_in_deck(start_card: dict, end_card: dict, original_query: str, html_output: bool = False) -> List[dict]:
     """
     Retrieves all cards in the specific deck between start_card and end_card (inclusive).
@@ -444,10 +473,13 @@ def search_range_in_deck(start_card: dict, end_card: dict, original_query: str, 
         # Or construct "WordSource SentenceSource"?
         # Given the "phrase card" description, SentenceSource is the key.
         # Let's append SentenceSource if it exists.
-        if s_source:
-             reconstructed_text_parts.append(s_source)
-        elif w_source:
-             reconstructed_text_parts.append(w_source)
+        
+        # Create a temporary flat card for reconstruction
+        temp_flat_card = {
+            "SentenceSource": s_source,
+            "WordSource": w_source
+        }
+        reconstructed_text_parts.append(reconstruct_card_text(temp_flat_card))
 
         card_data.append({
             "CardId": card.get("cardId"),
@@ -463,9 +495,9 @@ def search_range_in_deck(start_card: dict, end_card: dict, original_query: str, 
         })
     
     # Verification Step
-    reconstructed_full = "".join(reconstructed_text_parts)
+    full_reconstructed_text = " ".join(reconstructed_text_parts)
     norm_query = normalize_text(original_query)
-    norm_reconstructed = normalize_text(reconstructed_full)
+    norm_reconstructed = normalize_text(full_reconstructed_text)
     
     if norm_query != norm_reconstructed:
         # Debug info could be useful, but for now just fail silently as per "output only if these texts match"
@@ -577,6 +609,20 @@ if __name__ == "__main__":
                              if s_card['CardId'] > e_card['CardId']:
                                  debug_print(f"Skipping End Candidate (ID Order): StartID={s_card['CardId']}, EndID={e_card['CardId']}")
                                  continue
+
+                             # OPTIMIZATION: Single Card Match?
+                             if s_card['CardId'] == e_card['CardId']:
+                                 debug_print(f"Single card candidate found (ID={s_card['CardId']}). Verifying locally...")
+                                 # Reconstruct and Verify
+                                 card_text = reconstruct_card_text(s_card)
+                                 if normalize_text(card_text) == normalize_text(query_text):
+                                     debug_print("Single card range verified and accepted.")
+                                     result = [s_card]
+                                     found_range = True
+                                     break
+                                 else:
+                                     debug_print("Single card content mismatch.")
+                                     continue
 
                              # Found a valid range!
                              debug_print(f"Checking candidate range: Deck='{s_card['DeckName']}', StartID={s_card['CardId']}, EndID={e_card['CardId']}")
