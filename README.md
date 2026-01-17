@@ -2,7 +2,7 @@
 
 A command-line utility to interact with Anki via the AnkiConnect add-on.
 
-[![Version](https://img.shields.io/badge/version-v1.48.2-blue)](https://github.com/voothi/20240408222910-goldendict-anki-search) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-v1.50.2-blue)](https://github.com/voothi/20240408222910-goldendict-anki-search) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 This script provides two main functionalities for interacting with your Anki collection from the command line:
 
@@ -40,6 +40,9 @@ The script is controlled via command-line arguments.
 | `--optimized`          | Use the optimized single-request `findCardsInfo` API (requires `kardenwort-ankiconnect`).               |    No    |
 | `--browse-query`       | A query string to open directly in the Anki Card Browser (e.g., `"deck:MyDeck is:due"`).                |    No    |
 | `--browse-clipboard`   | If present, uses the content of the system clipboard as the query to open in the Anki Card Browser.     |    No    |
+| `--query-file`         | Path to a UTF-8 file containing the query (recommended for long paragraphs).                            |    No    |
+| `--debug`              | Enables detailed debug logging to `stderr`.                                                             |    No    |
+| `--help`               | Display help message.                                                                                   |    No    |
 
 [Back to Top](#table-of-contents)
 
@@ -134,7 +137,8 @@ Once the AHK script is configured and running, you have two ways to search from 
 
 -   **AnkiConnect API**: The script communicates with a running Anki instance through the AnkiConnect add-on, which exposes an API at `http://localhost:8765`. All actions, like finding cards or opening the browser, are sent as JSON-RPC requests.
 -   **Search Logic**: When using the `--query` argument, the script constructs a specific search query tailored to find terms in `WordSource`, `WordSourceInflectedForm`, or `SentenceSource` fields. This logic is hardcoded in the `search_word_in_decks` function and can be modified to fit different note types.
--   **Clipboard Bridge**: The `--browse-clipboard` argument acts as a bridge for other applications. The AutoHotkey script copies the selected text to the clipboard and then calls this Python script with that argument, which in turn tells Anki to search for the clipboard's content.
+-   **Multi-Sentence Logic**: For long queries, the script extracts "Start" and "End" anchors. It identifies a range of cards in Anki, reconstructs the text, and verifies it against the original query using robust normalization (ignoring whitespace/case/punctuation).
+-   **Configuration (`config.ini`)**: Settings for anchor detection and boundary punctuation can be customized in the local `config.ini` file.
 
 [Back to Top](#table-of-contents)
 
