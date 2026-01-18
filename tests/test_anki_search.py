@@ -370,6 +370,39 @@ class TestAnkiSearch(unittest.TestCase):
         processed2 = raw2[5:].strip() if raw2.lower().startswith("deck:") else raw2
         self.assertEqual(processed2, "MyDeck")
 
+    def test_escape_anki_query(self):
+        """Test that double quotes are correctly escaped for AnkiConnect queries."""
+        self.assertEqual(anki_search.escape_anki_query('simple'), 'simple')
+        self.assertEqual(anki_search.escape_anki_query('word "quoted" word'), 'word \\"quoted\\" word')
+        self.assertEqual(anki_search.escape_anki_query('"start"'), '\\"start\\"')
+        self.assertEqual(anki_search.escape_anki_query('end"'), 'end\\"')
+
+    @patch('anki_search.invoke_ac')
+    def test_search_word_in_decks_with_quotes(self, mock_invoke):
+        """Verify that search_word_in_decks properly escapes quotes in word searches."""
+        mock_invoke.return_value = [] # No cards found, but we want to check the query
+        
+        anki_search.search_word_in_decks('word "with" quotes', 'word', only_ids=True)
+        
+        # Check if the query argument contains the escaped quotes
+        args, kwargs = mock_invoke.call_args
+        query_arg = kwargs.get('query')
+        # The query should look like: ("WordSource:*word \"with\" quotes*" OR "WordSourceInflectedForm:*word \"with\" quotes*") ...
+        self.assertIn('WordSource:*word \\"with\\" quotes*', query_arg)
+        self.assertIn('WordSourceInflectedForm:*word \\"with\\" quotes*', query_arg)
+
+    @patch('anki_search.invoke_ac')
+    def test_search_sentence_in_decks_with_quotes(self, mock_invoke):
+        """Verify that search_word_in_decks properly escapes quotes in sentence searches."""
+        mock_invoke.return_value = []
+        
+        anki_search.search_word_in_decks('sentence "with" quotes', 'sentence', only_ids=True)
+        
+        args, kwargs = mock_invoke.call_args
+        query_arg = kwargs.get('query')
+        # The query should look like: "SentenceSource:*sentence \"with\" quotes*" ...
+        self.assertIn('SentenceSource:*sentence \\"with\\" quotes*', query_arg)
+
 if __name__ == '__main__':
 
     unittest.main()
