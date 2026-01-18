@@ -66,6 +66,18 @@ _session = requests.Session()
 
 
 
+def escape_anki_query(text: str) -> str:
+    """
+    Escapes double quotes in search text for AnkiConnect query syntax.
+    
+    AnkiConnect queries use double quotes to delimit field searches.
+    Any literal quotes within the search term must be escaped with a backslash.
+    
+    Example: 'Our "formal" knowledge' -> 'Our \\"formal\\" knowledge'
+    """
+    return text.replace('"', '\\"')
+
+
 def make_ac_request(action, **params):
     """Create AnkiConnect request payload."""
     return {'action': action, 'params': params, 'version': 6}
@@ -143,6 +155,9 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
     # If languages are specified, we add a filter to ensure the content contains the specific language tag.
     # We use a global search (no field prefix) or specific field patterns to satisfy the "not depend on field name" requirement
     # while acting as an additional filter on top of the static condition.
+    # Escape search term to prevent quote-related syntax errors
+    escaped_search_word = escape_anki_query(search_word)
+    
     # Construct the final query.
     if search_type == "word":
 
@@ -170,7 +185,7 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
         if DECK_FILTER:
             deck_query_part = f' AND deck:"*{DECK_FILTER}*"'
 
-        query = f'("WordSource:*{search_word}*" OR "WordSourceInflectedForm:*{search_word}*") {destination_check}{language_filter}{deck_query_part}'
+        query = f'("WordSource:*{escaped_search_word}*" OR "WordSourceInflectedForm:*{escaped_search_word}*") {destination_check}{language_filter}{deck_query_part}'
 
     elif search_type == "sentence":
         # Dynamic Condition for Sentences: Same global/flexible language search as words
@@ -197,7 +212,7 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
         if DECK_FILTER:
             deck_query_part = f' AND deck:"*{DECK_FILTER}*"'
 
-        query = f'"SentenceSource:*{search_word}*" {destination_check}{language_filter}{deck_query_part}'
+        query = f'"SentenceSource:*{escaped_search_word}*" {destination_check}{language_filter}{deck_query_part}'
     else:
         raise ValueError("Invalid search_type. Must be 'word' or 'sentence'.")
 
