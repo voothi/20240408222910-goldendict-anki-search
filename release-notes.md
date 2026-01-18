@@ -1,4 +1,11 @@
 
+## v1.52.6 (2026-01-18)
+
+### Bug Fixes
+- **Quote Handling**: Fixed a critical issue where search queries containing double quotes (especially at the beginning of selected text) caused AnkiConnect queries to fail.
+- **Improved Escaping**: Implemented internal `escape_anki_query` logic to properly handle literal quotation marks within search terms, ensuring compatibility with Anki's query parser.
+- **Robustness**: Enhanced reliability for multi-sentence range searches and individual word lookups when the source text includes punctuation or quotes.
+
 ## v1.52.4 (2026-01-18)
 
 ### Improvements
