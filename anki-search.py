@@ -45,6 +45,7 @@ CONFIG = load_config()
 SEPARATOR_CHARS = [c.strip() for c in CONFIG.get('Search', 'separator_chars', fallback=DEFAULT_SEPARATOR_CHARS).split()]
 ANCHOR_LENGTH = CONFIG.getint('Search', 'anchor_length', fallback=DEFAULT_ANCHOR_LENGTH)
 VERIFY_CONTENT = CONFIG.getboolean('Search', 'verify_content', fallback=True)
+ANCHOR_SOFT_MATCHING = CONFIG.getboolean('Search', 'anchor_soft_matching', fallback=True)
 _deck_filter_raw = CONFIG.get('Search', 'deck_filter', fallback='').strip()
 # Remove optional 'deck:' prefix if user included it
 if _deck_filter_raw.lower().startswith("deck:"):
@@ -385,6 +386,18 @@ def normalize_text(text: str) -> str:
     return text.lower()
 
 
+def soften_anchor_query(anchor: str) -> str:
+    """
+    Replaces punctuation and spaces with wildcards to make Anki search lenient.
+    Example: "Bellugi 1973)" -> "Bellugi*1973"
+    """
+    if not anchor:
+        return anchor
+    # Find all alphanumeric sequences and join with '*'
+    words = re.findall(r'\w+', anchor)
+    return "*".join(words)
+
+
 def is_valid_deck(deck_name: str) -> bool:
 
     """
@@ -613,6 +626,14 @@ if __name__ == "__main__":
              debug_print(f"Anchors extracted: Start='{start_str}', End='{end_str}'")
              
              if start_str and end_str and start_str != end_str:
+                 # Apply anchor softening if configured
+                 if ANCHOR_SOFT_MATCHING:
+                     if start_str:
+                         start_str = soften_anchor_query(start_str)
+                     if end_str:
+                         end_str = soften_anchor_query(end_str)
+                     debug_print(f"Anchors after softening: Start='{start_str}', End='{end_str}'")
+
                  # Search for Start Cards
                  start_candidates = search_word_in_decks(start_str, args.search_type, languages=args.languages, optimized=args.optimized)
                  debug_print(f"Start candidates found: {len(start_candidates) if start_candidates else 0}")

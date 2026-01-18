@@ -1,4 +1,15 @@
 
+## v1.54.0 (2026-01-18)
+
+### New Features
+- **Lenient Anchor Search**: Added `anchor_soft_matching` to handle punctuation differences in paragraph reading mode.
+  - Automatically replaces spaces and punctuation in search anchors with wildcards (`*`).
+  - Successfully matches cards even when the database contains extra punctuation (e.g., trailing commas, semicolons) that is not in the search query.
+  - Configurable via `config.ini` (default: `true`).
+
+### Improvements
+- **Robust Range Detection**: Improved the reliability of finding the start/end cards for long multi-sentence selections.
+
 ## v1.52.6 (2026-01-18)
 
 ### Bug Fixes
