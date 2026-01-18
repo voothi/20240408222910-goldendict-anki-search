@@ -1,5 +1,5 @@
 
-## v1.54.0 (2026-01-18)
+## v1.52.8 (2026-01-18)
 
 ### New Features
 - **Lenient Anchor Search**: Added `anchor_soft_matching` to handle punctuation differences in paragraph reading mode.
@@ -8,7 +8,8 @@
   - Configurable via `config.ini` (default: `true`).
 
 ### Improvements
-- **Robust Range Detection**: Improved the reliability of finding the start/end cards for long multi-sentence selections.
+- **Standardized Search Logic**: The `anchor_soft_matching` feature now effectively ignores and bypasses any punctuation like `;`, `,`, `.`, `!`, `?`, `(`, and `)` during the initial lookup in Anki, significantly improving the success rate of paragraph-range searches.
+- **Diagnostics**: Enhanced `--debug` output to show the state of softened anchors.
 
 ## v1.52.6 (2026-01-18)
 
