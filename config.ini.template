@@ -13,6 +13,9 @@ verify_content = false
 # If true (default), replaces punctuation and spaces in anchors with wildcards.
 # This makes search more lenient to differences in internal punctuation
 # (e.g., matching "Bellugi 1973" against "Bellugi, 1973").
+# Effect: It effectively ignores and bypasses any punctuation like ;, ,, ., !, ?, (, and ) 
+# during the initial lookup in Anki. This is what allows it to find 
+# Bellugi, 1973), in the database when you only searched for Bellugi 1973).
 anchor_soft_matching = true
 
 # Optional: Filter search results by a specific deck (or part of the deck name).
