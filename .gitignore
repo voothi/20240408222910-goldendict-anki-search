@@ -94,3 +94,4 @@ dist/
 references/
 
 __pycache__/
+config.ini
