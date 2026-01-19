@@ -69,8 +69,39 @@ class TestAnkiSearch(unittest.TestCase):
         # Start: "Start sentence here" ("here." has dot)
         self.assertEqual(start, "Start sentence here")
         
-        # End: "End sentence here" (Scanning backwards: "here." (stripped->here) -> "sentence" -> "End" -> "here." (stop))
-        self.assertEqual(end, "here")
+        # End: "End sentence here."
+        # Old Logic: "here." -> stop -> "here"
+        # New Logic: "here." -> continue -> "sentence" -> "End" -> "here."(stop) -> "End sentence here"
+        self.assertEqual(end, "End sentence here")
+
+    def test_extract_anchors_trailing_punctuation_fix(self):
+        # Regression test for v1.52.12 issue
+        # Query ends with a dot. Previously, this caused the end anchor to be just the last word.
+        # Now, it should include preceding words.
+        query = "In the last few years, the acquisition-learning distinction has been shown to be useful in explaining a variety of phenomena in the field of second language acquisition. While many of these phenomena may have alternative explanations, the claim is that the Monitor Theory provides for all of them in a general, non ad hoc way that satisfies the intuitions as well as the data. The papers in this volume review this research, and include discussion of how the second language classroom may be utilized for both acquisition and learning."
+        
+        start, end = anki_search.extract_anchors(query)
+        
+        # Start anchor: "In the last few" (LENGTH limit stops it before "years")
+        self.assertEqual(start, "In the last few")
+        
+        # End anchor logic (FIXED):
+        # "learning." -> has dot. Previously stopped here. Now continues.
+        # "and"
+        # "acquisition"
+        # "both" (Limit 4)
+        # So "both acquisition and learning"
+        self.assertEqual(end, "both acquisition and learning")
+
+    def test_extract_anchors_trailing_punctuation_short_phrase(self):
+         # Test a shorter phrase to ensure it works
+         query = "This is a failing case."
+         start, end = anki_search.extract_anchors(query)
+         # Start: "This is a failing" (Length limit 4 stops before "case.")
+         self.assertEqual(start, "This is a failing")
+         
+         # End: "is a failing case" (Length limit 4: case, failing, a, is)
+         self.assertEqual(end, "is a failing case")
 
     @patch('anki_search.invoke_ac')
     def test_search_range_in_deck(self, mock_invoke):

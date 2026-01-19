@@ -364,7 +364,10 @@ def extract_anchors(query: str) -> Tuple[Optional[str], Optional[str]]:
                 clean_w = clean_w.replace(sep, "")
             
             if clean_w:
-                end_anchor_words.append(clean_w)
+                if i == 0:
+                    end_anchor_words.append(clean_w)
+                else:
+                    break
             
             # If it's the very first word in the reverse scan (i.e. the last word of the query),
             # a trailing separator (like a dot) acts as the end boundary of our search, 
