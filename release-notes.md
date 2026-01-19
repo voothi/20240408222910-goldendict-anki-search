@@ -1,4 +1,11 @@
 
+## v1.53.0 (2026-01-19)
+
+### New Features
+- **Wordlist Field Support**: Added option to display the content of the `SentenceSourceWordlist` field in search results.
+  - Disabled by default. Can be enabled via `config.ini` (`show_wordlist = true`) or command-line flag (`--show-wordlist`).
+  - Output is formatted line-by-line, preserving the structure of the list from Anki (e.g., maintaining `<div>` or `<br>` breaks).
+
 ## v1.52.8 (2026-01-18)
 
 ### New Features

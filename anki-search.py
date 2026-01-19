@@ -46,6 +46,7 @@ SEPARATOR_CHARS = [c.strip() for c in CONFIG.get('Search', 'separator_chars', fa
 ANCHOR_LENGTH = CONFIG.getint('Search', 'anchor_length', fallback=DEFAULT_ANCHOR_LENGTH)
 VERIFY_CONTENT = CONFIG.getboolean('Search', 'verify_content', fallback=True)
 ANCHOR_SOFT_MATCHING = CONFIG.getboolean('Search', 'anchor_soft_matching', fallback=True)
+SHOW_WORDLIST_CONFIG = CONFIG.getboolean('Search', 'show_wordlist', fallback=False)
 _deck_filter_raw = CONFIG.get('Search', 'deck_filter', fallback='').strip()
 # Remove optional 'deck:' prefix if user included it
 if _deck_filter_raw.lower().startswith("deck:"):
@@ -252,9 +253,11 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
         for card in cards_result:
             fields = card.get("fields", {})
             
-            def get_val(f):
+            def get_val(f, preserve_lines=False):
                  val = fields.get(f, {}).get("value", "")
-                 return val if html_output else _strip_html(val)
+                 if html_output:
+                     return val
+                 return _strip_html_preserve_lines(val) if preserve_lines else _strip_html(val)
 
             # Create standardized dict
             flat_card = {
@@ -267,6 +270,7 @@ def search_word_in_decks(search_word: str, search_type: str, languages: Optional
                 "SentenceDestination": get_val("SentenceDestination"),
                 "SentenceDestination2": get_val("SentenceDestination2"),
                 "WordSourceMorphologyAI": get_val("WordSourceMorphologyAI"),
+                "Wordlist": get_val("SentenceSourceWordlist", preserve_lines=True),
                 "DeckName": card.get("deckName", "")
             }
             card_data.append(flat_card)
@@ -283,6 +287,20 @@ def _strip_html(text: str) -> str:
     clean = re.compile('<.*?>')
     text = re.sub(clean, ' ', text)
     return ' '.join(text.split()) # Consolidate multiple spaces into one.
+
+def _strip_html_preserve_lines(text: str) -> str:
+    """
+    Removes HTML tags but attempts to preserve line breaks from <div> and <br>.
+    Useful for fields like Wordlist where structure matters.
+    """
+    # Replace common block/break elements with newlines
+    text = re.sub(r'<(div|p|br|tr|li)[^>]*>', '\n', text, flags=re.IGNORECASE)
+    # Strip remaining tags
+    clean = re.compile('<.*?>')
+    text = re.sub(clean, '', text)
+    # Split by newline, strip, verify content, rejoin
+    lines = [line.strip() for line in text.split('\n') if line.strip()]
+    return '\n'.join(lines)
 
 # --- New Logic for Multi-Sentence/Range Search ---
 
@@ -505,9 +523,11 @@ def search_range_in_deck(start_card: dict, end_card: dict, original_query: str, 
     for card in cards_result:
         fields = card.get("fields", {})
 
-        def get_field_value(field_name: str, strip_html: bool = True) -> str:
+        def get_field_value(field_name: str, strip_html: bool = True, preserve_lines: bool = False) -> str:
             value = fields.get(field_name, {}).get("value", "")
-            return value if not strip_html else _strip_html(value)
+            if not strip_html:
+                return value
+            return _strip_html_preserve_lines(value) if preserve_lines else _strip_html(value)
 
         # For reconstruction, we always want stripped text
         # Preference: SentenceSource -> WordSource
@@ -539,6 +559,7 @@ def search_range_in_deck(start_card: dict, end_card: dict, original_query: str, 
             "SentenceDestination": get_field_value("SentenceDestination", strip_html=not html_output),
             "SentenceDestination2": get_field_value("SentenceDestination2", strip_html=not html_output),
             "WordSourceMorphologyAI": get_field_value("WordSourceMorphologyAI", strip_html=not html_output),
+            "Wordlist": get_field_value("SentenceSourceWordlist", strip_html=not html_output, preserve_lines=True),
             "DeckName": card.get("deckName", "")
         })
     
@@ -575,6 +596,7 @@ if __name__ == "__main__":
                         help="Type of search: 'word' for WordSource, 'sentence' for SentenceSource (default: word)")
     search_group.add_argument("--languages", "--lang", nargs='*',
                         help="List of languages to filter by (e.g., --languages en source-de-de:1). Filters based on 'source-{lang}-' tag or exact match if starting with 'source-'.")
+    search_group.add_argument("--show-wordlist", action="store_true", help="Display the 'SentenceSourceWordlist' field in the output.")
     search_group.add_argument("--html", action="store_true", help="Output search results in HTML format.")
     search_group.add_argument("--only-ids", action="store_true", help="Fast mode: only check for existence (returns IDs), skipping detailed info.")
     search_group.add_argument("--optimized", action="store_true", help="Use the optimized 'findCardsInfo' API (requires kardenwort-ankiconnect).")
@@ -711,6 +733,8 @@ if __name__ == "__main__":
              result = search_word_in_decks(query_text, args.search_type, languages=args.languages, html_output=args.html, only_ids=args.only_ids, optimized=args.optimized)
 
         if result:
+            show_wordlist = args.show_wordlist or SHOW_WORDLIST_CONFIG
+            
             if args.only_ids:
                  # Fast mode output: just IDs
                  print(f"Found {len(result)} cards:")
@@ -732,6 +756,7 @@ if __name__ == "__main__":
                         if card['SentenceDestination']: lines.append(f"- {card['SentenceDestination']}")
                         if card['SentenceDestination2']: lines.append(f"- {card['SentenceDestination2']}")
                         if card['WordSourceMorphologyAI']: lines.append(f"{card['WordSourceMorphologyAI']}")
+                        if show_wordlist and card.get('Wordlist'): lines.append(f"{card['Wordlist']}")
                         if card['DeckName']: lines.append(f"deck:{card['DeckName']}")
 
                         print("<br>\n".join(lines))
@@ -753,6 +778,7 @@ if __name__ == "__main__":
                         if card['SentenceDestination']: print(f"- {card['SentenceDestination']}")
                         if card['SentenceDestination2']: print(f"- {card['SentenceDestination2']}")
                         if card['WordSourceMorphologyAI']: print(f"{card['WordSourceMorphologyAI']}")
+                        if show_wordlist and card.get('Wordlist'): print(f"{card['Wordlist']}")
                         if card['DeckName']: print(f"deck:{card['DeckName']}")
                         
                         # Add a separator between cards.

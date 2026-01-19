@@ -27,3 +27,7 @@ anchor_soft_matching = true
 #       201100-en-common::...             (multi-line value must be indented)
 # Leave empty to search all decks.
 deck_filter = 
+
+# If true, the content of the 'SentenceSourceWordlist' field is included in the output.
+# The content is displayed line-by-line.
+show_wordlist = false

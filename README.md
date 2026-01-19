@@ -2,7 +2,7 @@
 
 A command-line utility to interact with Anki via the AnkiConnect add-on.
 
-[![Version](https://img.shields.io/badge/version-v1.52.8-blue)](https://github.com/voothi/20240408222910-goldendict-anki-search) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-v1.53.0-blue)](https://github.com/voothi/20240408222910-goldendict-anki-search) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 This script provides two main functionalities for interacting with your Anki collection from the command line:
 
@@ -34,19 +34,20 @@ This script provides two main functionalities for interacting with your Anki col
 
 The script is controlled via command-line arguments.
 
-| Argument               | Description                                                                                             | Required |
-| ---------------------- | ------------------------------------------------------------------------------------------------------- | :------: |
-| `--query`              | The word or phrase to search for in Anki notes.                                                         |    No    |
-| `--search-type`        | Type of search: `word` (default) or `sentence`. Affects which fields are queried.                       |    No    |
-| `--languages`          | Filter results by language (e.g., `en`, `de`). Supports short codes (`en`) or full tags. `<br>` Alias: `--lang`. |    No    |
-| `--html`               | If present, outputs search results with HTML formatting preserved.                                      |    No    |
-| `--only-ids`           | Returns only card IDs, skipping detailed info. Fastest (1 request).                                     |    No    |
-| `--optimized`          | Use the optimized single-request `findCardsInfo` API (requires `kardenwort-ankiconnect`).               |    No    |
-| `--browse-query`       | A query string to open directly in the Anki Card Browser (e.g., `"deck:MyDeck is:due"`).                |    No    |
-| `--browse-clipboard`   | If present, uses the content of the system clipboard as the query to open in the Anki Card Browser.     |    No    |
-| `--query-file`         | Path to a UTF-8 file containing the query (recommended for long paragraphs).                            |    No    |
-| `--debug`              | Enables detailed debug logging to `stderr`.                                                             |    No    |
-| `--help`               | Display help message.                                                                                   |    No    |
+| Argument             | Description                                                                                                      | Required |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------- | :------: |
+| `--query`            | The word or phrase to search for in Anki notes.                                                                  |    No    |
+| `--search-type`      | Type of search: `word` (default) or `sentence`. Affects which fields are queried.                                |    No    |
+| `--languages`        | Filter results by language (e.g., `en`, `de`). Supports short codes (`en`) or full tags. `<br>` Alias: `--lang`. |    No    |
+| `--html`             | If present, outputs search results with HTML formatting preserved.                                               |    No    |
+| `--show-wordlist`    | Display the 'SentenceSourceWordlist' field in the output line-by-line.                                           |    No    |
+| `--only-ids`         | Returns only card IDs, skipping detailed info. Fastest (1 request).                                              |    No    |
+| `--optimized`        | Use the optimized single-request `findCardsInfo` API (requires `kardenwort-ankiconnect`).                        |    No    |
+| `--browse-query`     | A query string to open directly in the Anki Card Browser (e.g., `"deck:MyDeck is:due"`).                         |    No    |
+| `--browse-clipboard` | If present, uses the content of the system clipboard as the query to open in the Anki Card Browser.              |    No    |
+| `--query-file`       | Path to a UTF-8 file containing the query (recommended for long paragraphs).                                     |    No    |
+| `--debug`            | Enables detailed debug logging to `stderr`.                                                                      |    No    |
+| `--help`             | Display help message.                                                                                            |    No    |
 
 [Back to Top](#table-of-contents)
 
