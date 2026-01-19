@@ -1,4 +1,11 @@
 
+## v1.52.12 (2026-01-19)
+
+### Bug Fixes
+- **Trailing Punctuation**: Fixed an issue where searches ending with a period (e.g., "... learning.") often failed.
+  - The script now correctly includes preceding words in the search anchor even if the selection ends with punctuation, ensuring a robust and specific search query.
+  - Previously, trailing punctuation caused the search anchor to be truncated to a single word.
+
 ## v1.52.10 (2026-01-19)
 
 ### New Features

@@ -356,7 +356,7 @@ def extract_anchors(query: str) -> Tuple[Optional[str], Optional[str]]:
     end_anchor_words = []
     reversed_words = words[::-1]
     
-    for w in reversed_words:
+    for i, w in enumerate(reversed_words):
         if has_separator(w):
              # Same logic as start, but backwards.
             clean_w = w
@@ -365,11 +365,17 @@ def extract_anchors(query: str) -> Tuple[Optional[str], Optional[str]]:
             
             if clean_w:
                 end_anchor_words.append(clean_w)
-            break
+            
+            # If it's the very first word in the reverse scan (i.e. the last word of the query),
+            # a trailing separator (like a dot) acts as the end boundary of our search, 
+            # not a barrier to the words preceding it. So we continue collecting words.
+            if i > 0:
+                break
         else:
             end_anchor_words.append(w)
-            if len(end_anchor_words) >= ANCHOR_LENGTH:
-                break
+            
+        if len(end_anchor_words) >= ANCHOR_LENGTH:
+            break
                 
     # Reverse back to normal order
     end_anchor = " ".join(end_anchor_words[::-1])
