@@ -441,6 +441,93 @@ class TestAnkiSearch(unittest.TestCase):
         self.assertEqual(start_str, "start*phrase")
         self.assertEqual(end_str, "Bellugi*1973")
 
+    def test_strip_html_preserve_lines(self):
+        """Test the _strip_html_preserve_lines helper for Wordlist field processing."""
+        # Simple text without HTML
+        self.assertEqual(anki_search._strip_html_preserve_lines("word1\nword2\nword3"), "word1\nword2\nword3")
+        
+        # HTML with <div> tags
+        html_divs = "<div>word1</div><div>word2</div><div>word3</div>"
+        result = anki_search._strip_html_preserve_lines(html_divs)
+        self.assertIn("word1", result)
+        self.assertIn("word2", result)
+        self.assertIn("word3", result)
+        # Should have newlines
+        self.assertIn("\n", result)
+        
+        # HTML with <br> tags
+        html_br = "word1<br>word2<br>word3"
+        result = anki_search._strip_html_preserve_lines(html_br)
+        lines = result.split('\n')
+        self.assertEqual(len(lines), 3)
+        self.assertEqual(lines[0], "word1")
+        self.assertEqual(lines[1], "word2")
+        self.assertEqual(lines[2], "word3")
+        
+        # Mixed HTML tags
+        html_mixed = "<div>the</div><div>to</div><div>for</div>"
+        result = anki_search._strip_html_preserve_lines(html_mixed)
+        self.assertIn("the\nto\nfor", result)
+        
+        # HTML with extra whitespace
+        html_whitespace = "<div>  word1  </div>\n<div>  word2  </div>"
+        result = anki_search._strip_html_preserve_lines(html_whitespace)
+        lines = result.split('\n')
+        self.assertEqual(lines[0], "word1")
+        self.assertEqual(lines[1], "word2")
+
+    @patch('anki_search.invoke_ac')
+    def test_wordlist_field_retrieval(self, mock_invoke):
+        """Verify that the SentenceSourceWordlist field is correctly retrieved."""
+        mock_invoke.side_effect = [
+            [12345],  # findCards
+            [  # cardsInfo
+                {
+                    'cardId': 12345,
+                    'fields': {
+                        'SentenceSource': {'value': 'Test sentence'},
+                        'SentenceSourceWordlist': {'value': '<div>word1</div><div>word2</div><div>word3</div>'},
+                        'WordSource': {'value': 'test'},
+                    },
+                    'deckName': '01-TestDeck'
+                }
+            ]
+        ]
+        
+        results = anki_search.search_word_in_decks("test", "word", html_output=False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertIn('Wordlist', results[0])
+        # Should be line-by-line
+        wordlist_content = results[0]['Wordlist']
+        self.assertIn('word1', wordlist_content)
+        self.assertIn('word2', wordlist_content)
+        self.assertIn('word3', wordlist_content)
+        self.assertIn('\n', wordlist_content)  # Should have newlines
+
+    @patch('anki_search.invoke_ac')
+    def test_wordlist_field_html_output(self, mock_invoke):
+        """Verify that Wordlist field preserves HTML when html_output=True."""
+        html_content = '<div>word1</div><div>word2</div>'
+        mock_invoke.side_effect = [
+            [12345],
+            [{
+                'cardId': 12345,
+                'fields': {
+                    'SentenceSource': {'value': 'Test'},
+                    'SentenceSourceWordlist': {'value': html_content},
+                    'WordSource': {'value': 'test'}
+                },
+                'deckName': '01-TestDeck'
+            }]
+        ]
+        
+        results = anki_search.search_word_in_decks("test", "word", html_output=True)
+        
+        self.assertEqual(len(results), 1)
+        # HTML should be preserved
+        self.assertEqual(results[0]['Wordlist'], html_content)
+
 if __name__ == '__main__':
 
     unittest.main()
