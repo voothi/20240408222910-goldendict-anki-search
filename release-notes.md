@@ -1,5 +1,16 @@
 
-## v1.52.12 (2026-01-19)
+## v1.52.12 (2026-02-12)
+
+### Bug Fixes
+- **Wordlist Display Fix**: Fixed an issue where Wordlist lemmas were missing in sentence mode when a range search matched a single card.
+- **HTML Formatting Preservation**: Ensured that the `Wordlist` field correctly inherits the `html_output` flag during candidate searches.
+
+### Improvements
+- **Testability Refactor**: Extracted the main CLI execution logic into a dedicated `run_search_cli` function, enabling direct unit testing of search results.
+- **Cleanup**: Removed redundant module imports and optimized internal code structure.
+- **Verification**: added new test case `test_single_card_range_match_html_wordlist` for edge-case coverage.
+
+## v1.52.11 (2026-01-19)
 
 ### Bug Fixes
 - **Trailing Punctuation**: Fixed an issue where searches ending with a period (e.g., "... learning.") often failed.
