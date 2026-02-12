@@ -603,7 +603,6 @@ def run_search_cli(args):
 
     # Priority 1: If --browse-clipboard is used, search with clipboard content.
     if args.browse_clipboard:
-        import pyperclip
         clipboard_content = pyperclip.paste()
         if clipboard_content:
             open_in_anki_browser(clipboard_content.strip())
@@ -620,7 +619,6 @@ def run_search_cli(args):
                      query_text = f.read().strip()
              except Exception as e:
                  print(f"Error reading query file: {e}", file=sys.stderr)
-                 import sys
                  sys.exit(1)
         else:
             query_text = args.query.strip()
@@ -773,7 +771,6 @@ def run_search_cli(args):
                             print("\t")
 
 if __name__ == "__main__":
-    import argparse
     parser = argparse.ArgumentParser(description="Search for a word in Anki decks or open a query in the Anki Browser.")
     search_group = parser.add_argument_group('Search arguments')
     search_group.add_argument("--query", help="Word to search for in any Anki deck (e.g., --query \"test\")")
