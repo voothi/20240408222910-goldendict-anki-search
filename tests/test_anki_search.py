@@ -559,6 +559,70 @@ class TestAnkiSearch(unittest.TestCase):
         # HTML should be preserved
         self.assertEqual(results[0]['Wordlist'], html_content)
 
+    @patch('builtins.print')
+    @patch('anki_search.invoke_ac')
+    def test_single_card_range_match_html_wordlist(self, mock_invoke, mock_print):
+        """Verify Wordlist is displayed in HTML when range search matches a single card."""
+        html_wordlist = '<div>word1</div><div>word2</div>'
+        
+        # Scenario:
+        # 1. Start anchor search finds card 12345
+        # 2. End anchor search finds card 12345
+        # 3. Code detects single card, verifies content, and returns it.
+        # 4. We want to see if the returned card HAS the HTML wordlist.
+        
+        mock_invoke.side_effect = [
+            [12345], # Start candidates IDs
+            [{       # Start candidate info (with HTML because we now pass it)
+                'cardId': 12345,
+                'fields': {
+                    'SentenceSource': {'value': 'Dabei werden die Löhne um'},
+                    'SentenceSourceWordlist': {'value': html_wordlist},
+                    'WordSource': {'value': ''}
+                },
+                'deckName': '01-TestDeck'
+            }],
+            [12345], # End candidates IDs
+            [{       # End candidate info
+                'cardId': 12345,
+                'fields': {
+                    'SentenceSource': {'value': 'Dabei werden die Löhne um'},
+                    'SentenceSourceWordlist': {'value': html_wordlist},
+                    'WordSource': {'value': ''}
+                },
+                'deckName': '01-TestDeck'
+            }]
+        ]
+        
+        import argparse
+        args = argparse.Namespace(
+            query="Dabei werden die Löhne um",
+            query_file=None,
+            search_type='sentence',
+            languages=['de'],
+            show_wordlist=True,
+            html=True,
+            only_ids=False,
+            optimized=False,
+            debug=False,
+            browse_clipboard=False,
+            browse_query=None
+        )
+        
+        # The range logic uses ANCHOR_LENGTH. "Dabei werden die Löhne um" has 5 words.
+        # DEFAULT_ANCHOR_LENGTH is 4, so it TRIGGERS range search.
+        
+        anki_search.run_search_cli(args)
+        
+        # Verify that the HTML wordlist was printed.
+        # The print calls combine lines with "<br>\n".
+        found = False
+        for call in mock_print.call_args_list:
+            if html_wordlist in call[0][0]:
+                found = True
+                break
+        self.assertTrue(found, "HTML Wordlist should be in the printed output")
+
 if __name__ == '__main__':
 
     unittest.main()

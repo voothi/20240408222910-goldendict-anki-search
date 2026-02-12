@@ -594,32 +594,8 @@ def search_range_in_deck(start_card: dict, end_card: dict, original_query: str, 
 
 
 # --- Main execution block ---
-if __name__ == "__main__":
-    # Set up the command-line argument parser.
-    parser = argparse.ArgumentParser(description="Search for a word in Anki decks or open a query in the Anki Browser.")
-    
-    # Group arguments for clarity: one for searching, one for opening the browser.
-    search_group = parser.add_argument_group('Search arguments')
-    search_group.add_argument("--query", help="Word to search for in any Anki deck (e.g., --query \"test\")")
-    search_group.add_argument("--search-type", choices=['word', 'sentence'], default='word',
-                        help="Type of search: 'word' for WordSource, 'sentence' for SentenceSource (default: word)")
-    search_group.add_argument("--languages", "--lang", nargs='*',
-                        help="List of languages to filter by (e.g., --languages en source-de-de:1). Filters based on 'source-{lang}-' tag or exact match if starting with 'source-'.")
-    search_group.add_argument("--show-wordlist", action="store_true", help="Display the 'SentenceSourceWordlist' field in the output.")
-    search_group.add_argument("--html", action="store_true", help="Output search results in HTML format.")
-    search_group.add_argument("--only-ids", action="store_true", help="Fast mode: only check for existence (returns IDs), skipping detailed info.")
-    search_group.add_argument("--optimized", action="store_true", help="Use the optimized 'findCardsInfo' API (requires kardenwort-ankiconnect).")
-    search_group.add_argument("--debug", action="store_true", help="Enable debug output to stderr.")
-    search_group.add_argument("--query-file", help="Read query from a file (overrides --query).")
-
-    browse_group = parser.add_argument_group('Browser arguments')
-
-
-    browse_group.add_argument("--browse-query", help="A query to open directly in the Anki Browser (e.g., --browse-query \"deck:MyDeck\")")
-    browse_group.add_argument("--browse-clipboard", action="store_true", help="Use the content of the clipboard as the query to open in the Anki Browser.")
-
-    args = parser.parse_args()
-    
+def run_search_cli(args):
+    global DEBUG
     if args.debug:
         DEBUG = True
 
@@ -627,6 +603,7 @@ if __name__ == "__main__":
 
     # Priority 1: If --browse-clipboard is used, search with clipboard content.
     if args.browse_clipboard:
+        import pyperclip
         clipboard_content = pyperclip.paste()
         if clipboard_content:
             open_in_anki_browser(clipboard_content.strip())
@@ -643,6 +620,7 @@ if __name__ == "__main__":
                      query_text = f.read().strip()
              except Exception as e:
                  print(f"Error reading query file: {e}", file=sys.stderr)
+                 import sys
                  sys.exit(1)
         else:
             query_text = args.query.strip()
@@ -666,7 +644,7 @@ if __name__ == "__main__":
                      debug_print(f"Anchors after softening: Start='{start_str}', End='{end_str}'")
 
                  # Search for Start Cards
-                 start_candidates = search_word_in_decks(start_str, args.search_type, languages=args.languages, optimized=args.optimized)
+                 start_candidates = search_word_in_decks(start_str, args.search_type, languages=args.languages, html_output=args.html, optimized=args.optimized)
                  debug_print(f"Start candidates found: {len(start_candidates) if start_candidates else 0}")
                  if start_candidates:
                       for cand in start_candidates:
@@ -674,7 +652,7 @@ if __name__ == "__main__":
 
                  
                  # Search for End Cards
-                 end_candidates = search_word_in_decks(end_str, args.search_type, languages=args.languages, optimized=args.optimized)
+                 end_candidates = search_word_in_decks(end_str, args.search_type, languages=args.languages, html_output=args.html, optimized=args.optimized)
                  debug_print(f"End candidates found: {len(end_candidates) if end_candidates else 0}")
                  if start_candidates and end_candidates:
                      # Find a matching pair in the same deck (starting with 0)
@@ -793,6 +771,27 @@ if __name__ == "__main__":
                         # Add a separator between cards.
                         if i != len(result) - 1:
                             print("\t")
-    # If no valid arguments are provided, show the help message.
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Search for a word in Anki decks or open a query in the Anki Browser.")
+    search_group = parser.add_argument_group('Search arguments')
+    search_group.add_argument("--query", help="Word to search for in any Anki deck (e.g., --query \"test\")")
+    search_group.add_argument("--search-type", choices=['word', 'sentence'], default='word',
+                        help="Type of search: 'word' for WordSource, 'sentence' for SentenceSource (default: word)")
+    search_group.add_argument("--languages", "--lang", nargs='*',
+                        help="List of languages to filter by (e.g., --languages en source-de-de:1). Filters based on 'source-{lang}-' tag or exact match if starting with 'source-'.")
+    search_group.add_argument("--show-wordlist", action="store_true", help="Display the 'SentenceSourceWordlist' field in the output.")
+    search_group.add_argument("--html", action="store_true", help="Output search results in HTML format.")
+    search_group.add_argument("--only-ids", action="store_true", help="Fast mode: only check for existence (returns IDs), skipping detailed info.")
+    search_group.add_argument("--optimized", action="store_true", help="Use the optimized 'findCardsInfo' API (requires kardenwort-ankiconnect).")
+    search_group.add_argument("--debug", action="store_true", help="Enable debug output to stderr.")
+    search_group.add_argument("--query-file", help="Read query from a file (overrides --query).")
+    browse_group = parser.add_argument_group('Browser arguments')
+    browse_group.add_argument("--browse-query", help="A query to open directly in the Anki Browser (e.g., --browse-query \"deck:MyDeck\")")
+    browse_group.add_argument("--browse-clipboard", action="store_true", help="Use the content of the clipboard as the query to open in the Anki Browser.")
+    args = parser.parse_args()
+    if args.query or args.query_file or args.browse_clipboard or args.browse_query:
+        run_search_cli(args)
     else:
         parser.print_help()
